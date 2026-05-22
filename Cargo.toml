@@ -4,4 +4,10 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+anyhow = "1.0.102"
+pocketbase-sdk = "0.1.1"
 ratatui = "0.30.0"
+reqwest = { version = "0.13.3", features = ["json", "multipart"] }
+serde = "1.0.228"
+socket2 = "0.6.3"
+tokio = { version = "1.52.3", features = ["full"] }

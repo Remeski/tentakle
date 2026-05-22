@@ -1,11 +1,6 @@
-use core::fmt;
 use std::error::Error;
 
-use reqwest::{
-    Url,
-    header::{AUTHORIZATION, CONTENT_TYPE, HeaderValue},
-    multipart::Form,
-};
+use reqwest::{Url, header::AUTHORIZATION, multipart::Form};
 use serde::Deserialize;
 
 #[allow(non_snake_case, dead_code)]
@@ -64,8 +59,10 @@ impl Client {
         identity: String,
         password: String,
     ) -> Result<(), Box<dyn Error>> {
-        let client = reqwest::Client::new()
-            .post(self.base_url.join("api/collections/users/auth-with-password")?);
+        let client = reqwest::Client::new().post(
+            self.base_url
+                .join("api/collections/users/auth-with-password")?,
+        );
         let mp = client.multipart(
             Form::new()
                 .text("identity", identity)
@@ -90,9 +87,7 @@ impl Client {
                 .await?
                 .json::<SystemRecord>()
                 .await?;
-            return Ok(System {
-                status: js.status
-            });
+            return Ok(System { status: js.status });
         } else {
             return Err(anyhow::Error::msg("Unauthorized!"));
         }
