@@ -1,56 +1,18 @@
-use std::error::Error;
+use color_eyre::{Result, eyre::eyre};
+use reqwest::{RequestBuilder, Url, header::AUTHORIZATION, multipart::Form};
 
-use reqwest::{Url, header::AUTHORIZATION, multipart::Form};
-use serde::Deserialize;
+use crate::integrations::beszel::records::{List, System, SystemStats};
 
-#[allow(non_snake_case, dead_code)]
-#[derive(Deserialize, Debug)]
-struct AuthRecord {
-    id: String,
-    collectionId: String,
-    collectionName: String,
-    created: String,
-    updated: String,
-    username: String,
-    email: String,
-    verified: bool,
-    emailVisibility: bool,
-}
-
-#[allow(non_snake_case, dead_code)]
-#[derive(Deserialize, Debug)]
-struct SystemRecord {
-    collectionId: String,
-    collectionName: String,
-    id: String,
-    name: String,
-    status: String,
-    host: String,
-    port: String,
-}
-
-#[allow(non_snake_case, dead_code)]
-#[derive(Deserialize, Debug)]
-struct AuthResponse {
-    token: String,
-    record: AuthRecord,
-}
-
-#[derive(Debug)]
-pub struct System {
-    pub status: String,
-}
+mod records;
 
 pub struct Client {
-    pub jwt: Option<String>,
-    base_url: Url,
+    http_handler: HTTPHandler,
 }
 
 impl Client {
     pub fn new(base_url: Url) -> Self {
         return Self {
-            jwt: None,
-            base_url: base_url,
+            http_handler: HTTPHandler::new(base_url, None),
         };
     }
 
@@ -58,38 +20,106 @@ impl Client {
         &mut self,
         identity: String,
         password: String,
-    ) -> Result<(), Box<dyn Error>> {
-        let client = reqwest::Client::new().post(
-            self.base_url
-                .join("api/collections/users/auth-with-password")?,
-        );
+    ) -> Result<()> {
+        self.http_handler.authenticate(identity, password).await?;
+        Ok(())
+    }
+
+    pub async fn systems(&self) -> Result<List<System>> {
+        let rb = self.http_handler.get("collections/systems/records")?;
+        let js = rb.send().await?.json::<List<System>>().await?;
+        Ok(js)
+    }
+
+    pub async fn system(&self, system_name: &str) -> Result<List<SystemStats>> {
+        let rb = self
+            .http_handler
+            .get("collections/system_stats/records")?
+            .query(&[(
+                "filter",
+                format!("(system.name='{}')", system_name).as_str(),
+            )]);
+        let js = rb.send().await?.json::<List<SystemStats>>().await?;
+
+        return Ok(js);
+    }
+}
+
+struct HTTPHandler {
+    token: Option<String>,
+    base_url: Url,
+}
+
+#[allow(dead_code)]
+impl HTTPHandler {
+    fn new(base_url: Url, token: Option<String>) -> Self {
+        Self {
+            token,
+            base_url: base_url.join("api/").expect("URL problem"),
+        }
+    }
+
+    async fn authenticate(&mut self, identity: String, password: String) -> Result<()> {
+        let client = reqwest::Client::new()
+            .post(self.base_url.join("collections/users/auth-with-password")?);
         let mp = client.multipart(
             Form::new()
                 .text("identity", identity)
                 .text("password", password),
         );
         let resp = mp.send().await?;
-        let js = resp.json::<AuthResponse>().await?;
+        let js = resp.json::<records::Auth>().await?;
 
-        self.jwt = Some(js.token);
+        self.token = Some(js.token);
+
         Ok(())
     }
 
-    pub async fn system(&self, id: &str) -> Result<System, anyhow::Error> {
-        let client = reqwest::Client::new().get(
-            self.base_url
-                .join(&format!("api/collections/systems/records/{}", id))?,
-        );
-        if let Some(token) = &self.jwt {
-            let js = client
-                .header(AUTHORIZATION, token.as_str())
-                .send()
-                .await?
-                .json::<SystemRecord>()
-                .await?;
-            return Ok(System { status: js.status });
+    fn get(&self, path: &str) -> Result<RequestBuilder> {
+        let client = reqwest::Client::new().get(self.base_url.join(path)?);
+        if let Some(token) = &self.token {
+            let rb = client.header(AUTHORIZATION, token.as_str());
+            return Ok(rb);
         } else {
-            return Err(anyhow::Error::msg("Unauthorized!"));
+            return Err(eyre!("unauthorized! token missing"));
         }
+    }
+
+    fn post(&self, path: &str) -> Result<RequestBuilder> {
+        let client = reqwest::Client::new().post(self.base_url.join(path)?);
+        if let Some(token) = &self.token {
+            let rb = client.header(AUTHORIZATION, token.as_str());
+            return Ok(rb);
+        } else {
+            return Err(eyre!("unauthorized! token missing"));
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use color_eyre::eyre::Result;
+    use reqwest::Url;
+
+    use crate::integrations::beszel;
+
+    // This is just for development purposes
+    #[tokio::test]
+    async fn test_beszel_web() -> Result<()> {
+        let mut beszel = beszel::Client::new(Url::parse("https://beszel.etremes.net")?);
+        beszel
+            .connect_auth_password(
+                String::from("admin@etremes.net"),
+                String::from("DL34VzyXxyBZvejT"),
+            )
+            .await?;
+
+        let systems = beszel.systems().await?;
+        dbg!(systems);
+
+        let pihole = beszel.system("HL_PIHOLE").await?;
+        dbg!(pihole);
+
+        Ok(())
     }
 }

@@ -1,27 +1,12 @@
-use std::error::Error;
-
-use reqwest::Url;
+use color_eyre::eyre::Result;
 
 use crate::tui::App;
 
 mod integrations;
 mod tui;
 
-use integrations::beszel;
-
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn Error>> {
-    let mut beszel = beszel::Client::new(Url::parse("https://beszel.etremes.net")?);
-    beszel
-        .connect_auth_password(
-            String::from("admin@etremes.net"),
-            String::from("DL34VzyXxyBZvejT"),
-        )
-        .await?;
-
-    let system = beszel.system("ebgqyz4q3sn1bx3").await?;
-    dbg!(system);
-
+async fn main() -> Result<()> {
     let mut terminal = ratatui::init();
     let mut app = App::new();
 
