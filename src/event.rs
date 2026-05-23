@@ -1,7 +1,11 @@
+use std::time::Duration;
+
 use color_eyre::eyre::{OptionExt, Result};
 use crossterm::event::{Event as CrosstermEvent, EventStream};
 use futures::{FutureExt, StreamExt};
 use tokio::sync::mpsc::{self, UnboundedSender};
+
+const TICK_PER_SECOND: usize = 10;
 
 pub struct EventHandler {
     sender: mpsc::UnboundedSender<Event>,
@@ -9,6 +13,7 @@ pub struct EventHandler {
 }
 
 pub enum Event {
+    Tick,
     App,
     Crossterm(CrosstermEvent),
 }
@@ -37,10 +42,14 @@ impl EventTask {
 
     async fn run(self) -> Result<()> {
         let mut term_reader = EventStream::new();
+        let mut ticker = tokio::time::interval(Duration::from_secs_f32(1.0 / TICK_PER_SECOND as f32));
         loop {
             tokio::select! {
                 _ = self.sender.closed() => {
                     break
+                }
+                _ = ticker.tick() => {
+                    self.sender.send(Event::Tick)?
                 }
                 Some(Ok(e)) = term_reader.next().fuse() => {
                     self.sender.send(Event::Crossterm(e))?
