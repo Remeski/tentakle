@@ -1,7 +1,6 @@
-use ratatui::{
-    style::{Color, Style},
-    widgets::Widget,
-};
+use ratatui::{style::Style, widgets::Widget};
+
+use crate::graphical::colors;
 
 pub struct Logo {
     logo: String,
@@ -22,7 +21,7 @@ impl Widget for Logo {
     where
         Self: Sized,
     {
-        let style = Style::new().fg(Color::Rgb(150, 0, 0));
+        let style = Style::new().fg(colors::PRIMARY);
         for (i, line) in self.logo.lines().enumerate() {
             buf.set_string(area.left(), area.top() + i as u16, line, style);
         }

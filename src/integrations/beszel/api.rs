@@ -1,7 +1,7 @@
 use color_eyre::{Result, eyre::eyre};
 use reqwest::{RequestBuilder, Url, header::AUTHORIZATION, multipart::Form};
 
-use crate::integrations::beszel::records::{self, List, System, SystemStats};
+use crate::integrations::beszel::records::{self, Container, List, System, SystemStats};
 
 pub struct Client {
     http_handler: HTTPHandler,
@@ -40,6 +40,26 @@ impl Client {
         let js = rb.send().await?.json::<List<SystemStats>>().await?;
 
         return Ok(js);
+    }
+
+    pub async fn containers(&self, system_name: &str) -> Result<List<Container>> {
+        let rb = self
+            .http_handler
+            .get("collections/containers/records")?
+            .query(&[(
+                "filter",
+                format!("(system.name='{}')", system_name).as_str(),
+            )]);
+        let js = rb.send().await?.json::<List<Container>>().await?;
+        Ok(js)
+    }
+
+    pub async fn containers_all(&self) -> Result<List<Container>> {
+        let rb = self
+            .http_handler
+            .get("collections/containers/records")?;
+        let js = rb.send().await?.json::<List<Container>>().await?;
+        Ok(js)
     }
 }
 
@@ -117,6 +137,9 @@ mod tests {
 
         let pihole = beszel.system("HL_PIHOLE").await?;
         dbg!(pihole);
+
+        let containers = beszel.containers_all().await?;
+        dbg!(containers);
 
         Ok(())
     }
