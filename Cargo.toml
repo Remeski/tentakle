@@ -6,6 +6,8 @@ edition = "2024"
 [dependencies]
 anyhow = "1.0.102"
 color-eyre = "0.6.5"
+crossterm = { version = "0.29.0", features = ["event-stream"] }
+futures = "0.3.32"
 pocketbase-sdk = "0.1.1"
 ratatui = "0.30.0"
 reqwest = { version = "0.13.3", features = ["json", "multipart", "query"] }

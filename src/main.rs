@@ -4,13 +4,14 @@ use crate::tui::App;
 
 mod integrations;
 mod tui;
+mod event;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let mut terminal = ratatui::init();
-    let mut app = App::new();
+    let terminal = ratatui::init();
+    let app = App::new();
 
-    app.run(&mut terminal)?;
+    app.run(terminal).await?;
 
     ratatui::restore();
     return Ok(());
