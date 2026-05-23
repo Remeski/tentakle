@@ -14,8 +14,12 @@ pub struct EventHandler {
 
 pub enum Event {
     Tick,
-    App,
+    App(AppEvent),
     Crossterm(CrosstermEvent),
+}
+
+pub enum AppEvent {
+    BeszelUpdate
 }
 
 impl EventHandler {
@@ -43,6 +47,7 @@ impl EventTask {
     async fn run(self) -> Result<()> {
         let mut term_reader = EventStream::new();
         let mut ticker = tokio::time::interval(Duration::from_secs_f32(1.0 / TICK_PER_SECOND as f32));
+        let mut beszel_ticker = tokio::time::interval(Duration::from_secs_f32(5.0));
         loop {
             tokio::select! {
                 _ = self.sender.closed() => {
@@ -50,6 +55,9 @@ impl EventTask {
                 }
                 _ = ticker.tick() => {
                     self.sender.send(Event::Tick)?
+                }
+                _ = beszel_ticker.tick() => {
+                    self.sender.send(Event::App(AppEvent::BeszelUpdate))?
                 }
                 Some(Ok(e)) = term_reader.next().fuse() => {
                     self.sender.send(Event::Crossterm(e))?
