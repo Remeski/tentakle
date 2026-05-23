@@ -7,7 +7,7 @@ use ratatui::{
 };
 
 use crate::{
-    components::beszel::SystemsState, event::{AppEvent, Event, EventHandler}, integrations::beszel::BeszelHandler, trace_dbg, ui
+    graphical::beszel::SystemsState, event::{AppEvent, Event, EventHandler}, integrations::beszel::BeszelHandler, trace_dbg, ui
 };
 
 pub struct App {

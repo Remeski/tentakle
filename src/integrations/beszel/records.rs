@@ -56,3 +56,21 @@ pub struct SystemStats {
     pub stats: serde_json::Value
 }
 
+#[allow(non_snake_case, dead_code)]
+#[derive(Deserialize, Debug)]
+pub struct Container {
+    pub collectionId: String,
+    pub collectionName: String,
+    pub name: String,
+    pub id: String,
+    pub system: String,
+    pub updated: isize,
+    pub cpu: f32,
+    pub memory: f32,
+    pub net: f32,
+    pub image: String,
+    pub ports: String,
+    pub status: String,
+    pub health: isize
+    
+}

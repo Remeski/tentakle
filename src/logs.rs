@@ -1,11 +1,6 @@
-use std::path::PathBuf;
-
-use color_eyre::eyre::{Context, Result};
-use directories::ProjectDirs;
-use lazy_static::lazy_static;
-use tracing::error;
+use color_eyre::eyre::Result;
 use tracing_error::ErrorLayer;
-use tracing_subscriber::{self, Layer, layer::SubscriberExt, util::SubscriberInitExt};
+use tracing_subscriber::{self, layer::SubscriberExt, util::SubscriberInitExt};
 
 pub fn initialize_logging() -> Result<()> {
     // std::fs::create_dir_all(directory.clone())?;
@@ -20,7 +15,7 @@ pub fn initialize_logging() -> Result<()> {
         .with_writer(log_file)
         .with_target(false)
         .with_ansi(false);
-        // .with_filter(tracing_subscriber::filter::EnvFilter::builder().parse_lossy(log_filter));
+    // .with_filter(tracing_subscriber::filter::EnvFilter::builder().parse_lossy(log_filter));
     tracing_subscriber::registry()
         .with(file_subscriber)
         .with(ErrorLayer::default())

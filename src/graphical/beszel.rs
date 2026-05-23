@@ -1,0 +1,188 @@
+use std::collections::HashMap;
+use std::time::Duration;
+
+use ratatui::layout::{Constraint, Flex, Layout, Margin, Size};
+use ratatui::style::{Style, Styled, Stylize};
+use ratatui::widgets::{Block, Paragraph, StatefulWidget, Widget};
+use tokio::time::{self, Instant};
+
+use crate::graphical::colors;
+use crate::integrations::beszel::records::System;
+use crate::integrations::beszel::records::{Container, List};
+use crate::utils::Grid;
+
+pub struct Systems {
+    systems: Vec<SystemStatus>,
+}
+
+pub struct SystemsState {
+    blink: bool,
+    timer: time::Instant,
+}
+
+struct SystemStatus {
+    name: String,
+    online: bool,
+}
+
+impl Systems {
+    pub fn new(systems: &List<System>) -> Self {
+        let systems = systems
+            .items
+            .iter()
+            .map(|item| SystemStatus {
+                name: item.name.clone(),
+                online: item.status == "up",
+            })
+            .collect();
+        Self { systems }
+    }
+}
+
+impl Default for SystemsState {
+    fn default() -> Self {
+        SystemsState {
+            blink: false,
+            timer: Instant::now(),
+        }
+    }
+}
+
+impl StatefulWidget for Systems {
+    type State = SystemsState;
+    fn render(
+        self,
+        area: ratatui::prelude::Rect,
+        buf: &mut ratatui::prelude::Buffer,
+        state: &mut Self::State,
+    ) where
+        Self: Sized,
+    {
+        if state.timer.elapsed() > Duration::from_secs_f32(0.5) {
+            state.blink = !state.blink;
+            state.timer = Instant::now();
+        }
+
+        let num_systems = self.systems.len();
+        let num_rows = num_systems / 4 + if num_systems % 4 != 0 { 1 } else { 0 };
+        let area = area.resize(Size::new(area.width, (num_rows + 2) as u16));
+
+        Block::bordered()
+            .title("Hosts".fg(colors::FG_TEXT))
+            .border_type(ratatui::widgets::BorderType::Rounded)
+            .border_style(Style::new().fg(colors::BORDER))
+            .bg(colors::BG_CONT)
+            .render(area, buf);
+        // let layout = Layout::vertical(vec![Constraint::Length(1); self.systems.len()]).split(area);
+
+        Block::new()
+            .style(Style::new().fg(colors::FG_TEXT))
+            .bg(colors::BG_CONT)
+            .render(area.inner(Margin::new(1, 1)), buf);
+
+        let layout = Grid::new(
+            area.inner(Margin::new(1, 1)),
+            vec![Constraint::Percentage(25); 4],
+            vec![Constraint::Length(1); num_rows],
+        );
+
+        for (i, area) in layout.single_dimensional().iter().enumerate() {
+            let s = self.systems.get(i);
+            if s.is_none() {
+                break;
+            }
+            let s = s.unwrap();
+
+            let inner =
+                Layout::horizontal([Constraint::Percentage(10), Constraint::Percentage(90)])
+                    .flex(Flex::SpaceBetween)
+                    .split(*area);
+            let name = Paragraph::new(s.name.clone());
+            let char = if state.blink { "●" } else { "○" };
+            let status = if s.online {
+                Paragraph::new(char).style(Style::new().fg(colors::SUCCESS))
+            } else {
+                Paragraph::new(char).style(Style::new().fg(colors::ERROR))
+            };
+            name.render(inner[1], buf);
+            status.render(inner[0], buf);
+        }
+    }
+}
+
+pub struct Containers<'a> {
+    containers: &'a HashMap<String, Vec<Container>>,
+}
+
+impl<'a> Containers<'a> {
+    pub fn new(containers: &'a HashMap<String, Vec<Container>>) -> Self {
+        Self { containers }
+    }
+}
+
+impl<'a> Widget for Containers<'a> {
+    fn render(self, area: ratatui::prelude::Rect, buf: &mut ratatui::prelude::Buffer)
+    where
+        Self: Sized,
+    {
+        let outer_block = Block::bordered()
+            .title("Containers".fg(colors::FG_TEXT))
+            .border_type(ratatui::widgets::BorderType::Rounded)
+            .border_style(Style::new().fg(colors::BORDER));
+        outer_block.render(area, buf);
+        let inner_area = area.inner(Margin::new(1, 1));
+
+        let grid = Grid::new(
+            inner_area,
+            vec![Constraint::Percentage(25); 4],
+            vec![Constraint::Length(1); inner_area.height as usize],
+        );
+
+        let container_names = self.containers.keys();
+
+        container_names
+            .into_iter()
+            .enumerate()
+            .for_each(|(i, name)| {
+                if let Some(col) = grid.cols().get(i) {
+                    Paragraph::new(format!("{}", name.clone()).set_style(Style::new().bold()))
+                        .render(*col.get(0).unwrap(), buf);
+
+                    let containers = self.containers.get(name).unwrap();
+
+                    containers.iter().enumerate().for_each(|(j, container)| {
+                        if j == 0 {
+                            return;
+                        }
+                        if let Some(rect) = col.get(j) {
+                            let symbol_color = match container.health {
+                                0 => colors::SUCCESS,
+                                2 => colors::SUCCESS,
+                                3 => colors::ERROR,
+                                _ => colors::BORDER,
+                            };
+                            let symbol = match container.health {
+                                0 => "○",
+                                2 => "●",
+                                3 => "●",
+                                _ => "○",
+                            };
+                            // Paragraph::new(format!("{} {}", symbol.fg(colors::SUCCESS), container.name.clone())).render(*rect, buf);
+
+                            let inner = Layout::horizontal([
+                                Constraint::Percentage(10),
+                                Constraint::Percentage(90),
+                            ])
+                            .flex(Flex::SpaceBetween)
+                            .split(*rect);
+                            let name = Paragraph::new(container.name.clone());
+                            let status =
+                                Paragraph::new(symbol).style(Style::new().fg(symbol_color));
+                            name.render(inner[1], buf);
+                            status.render(inner[0], buf);
+                        }
+                    });
+                }
+            });
+    }
+}
