@@ -1,9 +1,10 @@
-use ratatui::layout::{Constraint, Flex, Layout};
-use ratatui::style::{Color, Style};
-use ratatui::widgets::{Paragraph, Widget};
+use ratatui::layout::{Constraint, Flex, Layout, Margin, Size};
+use ratatui::style::{Color, Style, Stylize};
+use ratatui::widgets::{Block, Paragraph, Widget};
 
 use crate::integrations::beszel::records::List;
 use crate::integrations::beszel::records::System;
+use crate::utils::Grid;
 
 pub struct Systems {
     systems: Vec<SystemStatus>,
@@ -38,12 +39,37 @@ impl Widget for Systems {
     where
         Self: Sized,
     {
-        let layout = Layout::vertical(vec![Constraint::Length(1); self.systems.len()]).split(area);
-        for (i, area) in layout.iter().enumerate() {
-            let s = self.systems.get(i).expect("index out of bounds");
-            let inner = Layout::horizontal([Constraint::Percentage(5), Constraint::Percentage(95)])
-                .flex(Flex::SpaceEvenly)
-                .split(*area);
+        let num_systems = self.systems.len();
+        let num_rows = num_systems / 4 + if num_systems % 4 != 0 { 1 } else { 0 };
+        let area = area.resize(Size::new(area.width, (num_rows + 2) as u16));
+
+        Block::bordered()
+            .title("Hosts".fg(Color::Rgb(255, 255, 255)))
+            .style(Style::new().fg(Color::Rgb(30, 30, 30)))
+            .render(area, buf);
+        // let layout = Layout::vertical(vec![Constraint::Length(1); self.systems.len()]).split(area);
+
+        Block::new()
+            .style(Style::new().fg(Color::Rgb(255, 255, 255)))
+            .render(area.inner(Margin::new(1, 1)), buf);
+
+        let layout = Grid::new(
+            area.inner(Margin::new(1, 1)),
+            vec![Constraint::Percentage(25); 4],
+            vec![Constraint::Length(1); num_rows],
+        );
+
+        for (i, area) in layout.single_dimensional().iter().enumerate() {
+            let s = self.systems.get(i);
+            if s.is_none() {
+                break;
+            }
+            let s = s.unwrap();
+
+            let inner =
+                Layout::horizontal([Constraint::Percentage(10), Constraint::Percentage(90)])
+                    .flex(Flex::SpaceBetween)
+                    .split(*area);
             let name = Paragraph::new(s.name.clone());
             let status = if s.online {
                 Paragraph::new("●").style(Style::new().fg(Color::Rgb(20, 100, 0)))

@@ -5,13 +5,15 @@ use ratatui::{
 };
 
 use crate::{
-    components::beszel::Systems, event::{AppEvent, Event, EventHandler}, integrations::beszel::BeszelHandler, trace_dbg, ui
+    event::{AppEvent, Event, EventHandler},
+    integrations::beszel::BeszelHandler,
+    trace_dbg, ui,
 };
 
 pub struct App {
     exit: bool,
     event_handler: EventHandler,
-    pub beszel_handler: Option<BeszelHandler>
+    pub beszel_handler: Option<BeszelHandler>,
 }
 
 impl App {
