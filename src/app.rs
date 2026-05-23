@@ -2,14 +2,19 @@ use color_eyre::eyre::Result;
 use ratatui::{
     DefaultTerminal,
     crossterm::event::{Event as CrosstermEvent, KeyCode},
-    widgets::{Block, Widget},
+    layout::{Constraint, Direction, Layout},
+    style::Style,
+    widgets::{Block, Paragraph, Widget},
 };
 
-use crate::event::{Event, EventHandler};
+use crate::{
+    components::beszel::Systems, event::{Event, EventHandler}, trace_dbg, ui
+};
 
 pub struct App {
     exit: bool,
     event_handler: EventHandler,
+    pub systems: Option<Systems>
 }
 
 impl App {
@@ -17,27 +22,33 @@ impl App {
         Self {
             exit: false,
             event_handler: EventHandler::new(),
+            systems: None,
         }
     }
 
     pub async fn run(mut self, mut term: DefaultTerminal) -> Result<()> {
+        let systems = Systems::new().await?;
+        self.systems = Some(systems);
+
         while !self.exit {
             self.handle_events().await?;
-            term.draw(|frame| frame.render_widget(&self, frame.area()))?;
+            term.draw(|frame| ui::render(&self, frame))?;
         }
 
         return Ok(());
     }
 
     fn handle_crossterm(&mut self, ce: CrosstermEvent) -> Result<()> {
+        trace_dbg!(&ce);
         match ce {
-            CrosstermEvent::Key(ke) => {
-                match ke.code {
-                    KeyCode::Char('q') => {
-                        self.exit = true;
-                    }
-                    _ => {}
+            CrosstermEvent::Key(ke) => match ke.code {
+                KeyCode::Char('q') => {
+                    self.exit = true;
                 }
+                _ => {}
+            },
+            CrosstermEvent::Mouse(m) => {
+                trace_dbg!(m);
             }
             _ => {}
         }
@@ -52,14 +63,5 @@ impl App {
             _ => {}
         };
         return Ok(());
-    }
-}
-
-impl Widget for &App {
-    fn render(self, area: ratatui::prelude::Rect, buf: &mut ratatui::prelude::Buffer)
-    where
-        Self: Sized,
-    {
-        Block::new().render(area, buf);
     }
 }

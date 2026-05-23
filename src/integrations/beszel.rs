@@ -3,7 +3,7 @@ use reqwest::{RequestBuilder, Url, header::AUTHORIZATION, multipart::Form};
 
 use crate::integrations::beszel::records::{List, System, SystemStats};
 
-mod records;
+pub mod records;
 
 pub struct Client {
     http_handler: HTTPHandler,

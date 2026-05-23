@@ -5,7 +5,7 @@ use crossterm::event::{Event as CrosstermEvent, EventStream};
 use futures::{FutureExt, StreamExt};
 use tokio::sync::mpsc::{self, UnboundedSender};
 
-const TICK_PER_SECOND: usize = 10;
+const TICK_PER_SECOND: usize = 24;
 
 pub struct EventHandler {
     sender: mpsc::UnboundedSender<Event>,
