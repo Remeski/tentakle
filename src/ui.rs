@@ -5,7 +5,11 @@ use ratatui::{
     widgets::{Block, Widget},
 };
 
-use crate::{app::App, components::{self, Logo}, main, trace_dbg};
+use crate::{
+    app::App,
+    components::{self, Logo},
+    main, trace_dbg,
+};
 
 pub fn render(app: &App, frame: &mut Frame<'_>) {
     let bg = Block::new().style(Style::new().bg(Color::Rgb(15, 15, 15)));
@@ -19,8 +23,12 @@ pub fn render(app: &App, frame: &mut Frame<'_>) {
 
     // frame.render_widget(Block::bordered(), main_area);
 
-    if let Some(systems) = app.systems.as_ref() {
-        frame.render_widget(systems, Rect::new(main_area.left(), main_area.top(), 50, 10))
+    if let Some(beszel) = &app.beszel_handler {
+        if let Some(widget) = beszel.systems_widget() {
+            frame.render_widget(
+                widget,
+                Rect::new(main_area.left(), main_area.top(), 50, 10),
+            )
+        }
     }
-    
 }

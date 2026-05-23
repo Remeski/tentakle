@@ -2,19 +2,16 @@ use color_eyre::eyre::Result;
 use ratatui::{
     DefaultTerminal,
     crossterm::event::{Event as CrosstermEvent, KeyCode},
-    layout::{Constraint, Direction, Layout},
-    style::Style,
-    widgets::{Block, Paragraph, Widget},
 };
 
 use crate::{
-    components::beszel::Systems, event::{Event, EventHandler}, trace_dbg, ui
+    components::beszel::Systems, event::{AppEvent, Event, EventHandler}, integrations::beszel::BeszelHandler, trace_dbg, ui
 };
 
 pub struct App {
     exit: bool,
     event_handler: EventHandler,
-    pub systems: Option<Systems>
+    pub beszel_handler: Option<BeszelHandler>
 }
 
 impl App {
@@ -22,13 +19,13 @@ impl App {
         Self {
             exit: false,
             event_handler: EventHandler::new(),
-            systems: None,
+            beszel_handler: None,
         }
     }
 
     pub async fn run(mut self, mut term: DefaultTerminal) -> Result<()> {
-        let systems = Systems::new().await?;
-        self.systems = Some(systems);
+        let beszel_handler = BeszelHandler::new().await?;
+        self.beszel_handler = Some(beszel_handler);
 
         while !self.exit {
             self.handle_events().await?;
@@ -59,6 +56,11 @@ impl App {
         match self.event_handler.next().await? {
             Event::Crossterm(ke) => {
                 self.handle_crossterm(ke)?;
+            }
+            Event::App(AppEvent::BeszelUpdate) => {
+                if let Some(bh) = &mut self.beszel_handler {
+                    bh.update().await;
+                }
             }
             _ => {}
         };
