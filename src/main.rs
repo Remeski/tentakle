@@ -10,6 +10,7 @@ mod components;
 mod ui;
 mod logs;
 mod config;
+mod utils;
 
 #[tokio::main]
 async fn main() -> Result<()> {
