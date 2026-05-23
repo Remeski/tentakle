@@ -1,3 +1,5 @@
+use std::cell::RefCell;
+
 use color_eyre::eyre::Result;
 use ratatui::{
     DefaultTerminal,
@@ -5,15 +7,14 @@ use ratatui::{
 };
 
 use crate::{
-    event::{AppEvent, Event, EventHandler},
-    integrations::beszel::BeszelHandler,
-    trace_dbg, ui,
+    components::beszel::SystemsState, event::{AppEvent, Event, EventHandler}, integrations::beszel::BeszelHandler, trace_dbg, ui
 };
 
 pub struct App {
     exit: bool,
     event_handler: EventHandler,
     pub beszel_handler: Option<BeszelHandler>,
+    pub systems_state: RefCell<SystemsState>
 }
 
 impl App {
@@ -22,6 +23,7 @@ impl App {
             exit: false,
             event_handler: EventHandler::new(),
             beszel_handler: None,
+            systems_state: RefCell::new(SystemsState::default())
         }
     }
 

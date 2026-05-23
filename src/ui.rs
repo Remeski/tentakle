@@ -21,7 +21,7 @@ pub fn render(app: &App, frame: &mut Frame<'_>) {
 
     if let Some(beszel) = &app.beszel_handler {
         if let Some(widget) = beszel.systems_widget() {
-            frame.render_widget(widget, Rect::new(main_area.left(), main_area.top(), 70, 5))
+            frame.render_stateful_widget(widget, Rect::new(main_area.left(), main_area.top(), 70, 5), &mut app.systems_state.borrow_mut())
         }
     }
 }
