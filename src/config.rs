@@ -5,8 +5,6 @@ use clap::{Parser};
 use color_eyre::eyre::Result;
 use serde::Deserialize;
 
-use crate::trace_dbg;
-
 #[derive(Deserialize)]
 pub struct Config {
     pub beszel: Beszel,
@@ -18,6 +16,7 @@ pub struct Beszel {
     pub identity: String,
     pub password: String,
     pub poll_interval: Option<usize>,
+    pub load_averages_order: Option<Vec<String>>
 }
 
 #[derive(Parser, Debug)]
@@ -28,9 +27,7 @@ pub struct Args {
 }
 
 pub fn read_config() -> Result<Config> {
-    let args = Args::parse();
-
-    trace_dbg!(&args);
+    Args::parse();
 
     let config: Config = toml::from_str(&fs::read_to_string("config.toml")?)?;
     Ok(config)

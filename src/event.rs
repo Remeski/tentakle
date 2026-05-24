@@ -22,7 +22,9 @@ pub enum Event {
 
 pub enum AppEvent {
     BeszelUpdate,
-    BeszelInitialize
+    BeszelInitialize,
+    BeszelChangeLoadAverageHost
+
 }
 
 impl EventHandler {
@@ -56,6 +58,7 @@ impl EventTask {
         let mut term_reader = EventStream::new();
         let mut ticker = tokio::time::interval(Duration::from_secs_f32(1.0 / TICK_PER_SECOND as f32));
         let mut beszel_ticker = tokio::time::interval(Duration::from_secs(config::read_config()?.beszel.poll_interval.unwrap_or(15) as u64));
+        let mut lasstate_ticker = tokio::time::interval(Duration::from_secs(30));
         loop {
             tokio::select! {
                 _ = self.sender.closed() => {
@@ -66,6 +69,9 @@ impl EventTask {
                 }
                 _ = beszel_ticker.tick() => {
                     self.sender.send(Event::App(AppEvent::BeszelUpdate))?
+                }
+                _ = lasstate_ticker.tick() => {
+                    self.sender.send(Event::App(AppEvent::BeszelChangeLoadAverageHost))?
                 }
                 Some(Ok(e)) = term_reader.next().fuse() => {
                     self.sender.send(Event::Crossterm(e))?

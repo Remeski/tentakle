@@ -54,7 +54,12 @@ pub trait InsideRect {
 
 impl InsideRect for Rect {
     fn inside(&self, c: usize, r: usize) -> bool {
-        let (x,x_top,y,y_top) = (self.x as usize, (self.x + self.width) as usize, self.y as usize, (self.y + self.height) as usize);
+        let (x, x_top, y, y_top) = (
+            self.x as usize,
+            (self.x + self.width) as usize,
+            self.y as usize,
+            (self.y + self.height) as usize,
+        );
         c >= x && c <= x_top && r >= y && r <= y_top
     }
 }

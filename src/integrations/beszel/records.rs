@@ -1,7 +1,7 @@
 use serde::Deserialize;
 
 #[allow(non_snake_case, dead_code)]
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct List<T> {
     pub page: isize,
     pub perPage: isize,
@@ -33,7 +33,7 @@ pub struct Auth {
 }
 
 #[allow(non_snake_case, dead_code)]
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct System {
     pub collectionId: String,
     pub collectionName: String,
@@ -73,4 +73,10 @@ pub struct Container {
     pub status: String,
     pub health: isize
     
+}
+
+#[allow(non_snake_case, dead_code)]
+#[derive(Deserialize, Debug)]
+pub struct Stats {
+    pub la: [f64; 3]
 }

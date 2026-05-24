@@ -1,7 +1,7 @@
 use color_eyre::{Result, eyre::eyre};
 use reqwest::{RequestBuilder, Url, header::AUTHORIZATION, multipart::Form};
 
-use crate::{integrations::beszel::records::{self, Container, List, System, SystemStats}};
+use crate::integrations::beszel::records::{self, Container, List, System, SystemStats};
 
 #[derive(Debug)]
 pub struct Client {
@@ -25,7 +25,9 @@ impl Client {
     }
 
     pub async fn systems(&self) -> Result<List<System>> {
-        let rb = self.http_handler.get("collections/systems/records")?;
+        let rb = self
+            .http_handler
+            .get("collections/systems/records")?;
         let js = rb.send().await?.json::<List<System>>().await?;
         Ok(js)
     }
@@ -34,10 +36,14 @@ impl Client {
         let rb = self
             .http_handler
             .get("collections/system_stats/records")?
-            .query(&[(
-                "filter",
-                format!("(system.name='{}')", system_name).as_str(),
-            )]);
+            .query(&[
+                (
+                    "filter",
+                    format!("(system.name='{}')", system_name).as_str(),
+                ),
+                ("sort", "-created"),
+                ("perPage", "100"),
+            ]);
         let js = rb.send().await?.json::<List<SystemStats>>().await?;
 
         return Ok(js);
@@ -64,7 +70,6 @@ impl Client {
             .get("collections/containers/records")?
             .query(&[("sort", "-cpu")]);
         let js = rb.send().await?.json::<List<Container>>().await?;
-        // trace_dbg!(&js);
         Ok(js)
     }
 }
@@ -142,11 +147,11 @@ mod tests {
         let systems = beszel.systems().await?;
         dbg!(systems);
 
-        let pihole = beszel.system("HL_PIHOLE").await?;
+        let pihole = beszel.system("HZ_FI1").await?;
         dbg!(pihole);
 
-        let containers = beszel.containers_all().await?;
-        dbg!(containers);
+        // let containers = beszel.containers_all().await?;
+        // dbg!(containers);
 
         Ok(())
     }

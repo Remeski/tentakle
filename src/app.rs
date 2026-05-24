@@ -1,5 +1,3 @@
-use std::{cell::RefCell, time::Duration};
-
 use color_eyre::eyre::Result;
 use ratatui::{
     DefaultTerminal,
@@ -67,6 +65,12 @@ impl App {
         if self.ui.systems_area.inside(c as usize, r as usize) {
             self.ui.systems_state.borrow_mut().next_page();
         }
+        if self.ui.containers_area.inside(c as usize, r as usize) {
+            self.ui.containers_state.borrow_mut().next_page();
+        }
+        if self.ui.las_area.inside(c as usize, r as usize) {
+            self.ui.las_state.borrow_mut().next_host();
+        }
     }
 
     async fn handle_events(&mut self) -> Result<()> {
@@ -87,6 +91,9 @@ impl App {
                     self.beszel_handler = Some(beszel_handler.unwrap());
                     self.event_handler.send(AppEvent::BeszelUpdate).await?;
                 }
+            }
+            Event::App(AppEvent::BeszelChangeLoadAverageHost) => {
+                self.ui.las_state.borrow_mut().next_host();
             }
             _ => {}
         };

@@ -9,14 +9,21 @@ use ratatui::{
 
 use crate::{
     app::App,
-    graphical::{Logo, beszel::SystemsState, colors},
+    graphical::{
+        Logo,
+        beszel::{ContainersState, LASState, SystemsState},
+        colors,
+    },
 };
 
 #[derive(Default)]
 pub struct UI {
     pub systems_area: Rect,
     pub containers_area: Rect,
+    pub las_area: Rect,
     pub systems_state: RefCell<SystemsState>,
+    pub containers_state: RefCell<ContainersState>,
+    pub las_state: RefCell<LASState>,
 }
 
 impl UI {
@@ -25,20 +32,26 @@ impl UI {
 
         frame.render_widget(bg, frame.area());
 
-        frame.render_widget(Logo::new(), Rect::new(4, 1, 1, 1));
+        frame.render_widget(Logo::new(), Rect::new(4, 0, 1, 1));
 
-        let main_area = Rect::new(5, 12, frame.area().width - 10, frame.area().height - 15);
+        let main_area = Rect::new(4, 10, frame.area().width - 10, frame.area().height - 10);
 
         // frame.render_widget(Block::bordered(), main_area);
-        let [beszel_area, _] = main_area.layout(&Layout::horizontal([Constraint::Percentage(60), Constraint::Percentage(40)]));
+        let [beszel_area, _] = main_area.layout(&Layout::horizontal([
+            Constraint::Percentage(60),
+            Constraint::Percentage(40),
+        ]));
 
         if let Some(beszel) = &app.beszel_handler {
-            let [systems_area, containers_area] =  beszel_area.layout(&Layout::vertical([Constraint::Percentage(30), Constraint::Percentage(70)]).flex(Flex::SpaceEvenly).spacing(Spacing::Space(1)));
-            // let systems_area = layout //Rect::new(main_area.left(), main_area.top(), 70, 3);
-            // let containers_area = Rect::new(main_area.left(), main_area.top() + 3 + 1, 70, 3);
+            let [systems_area, containers_area, graph_area] = beszel_area.layout(
+                &Layout::vertical([Constraint::Length(4), Constraint::Max(10), Constraint::Fill(1)])
+                    .flex(Flex::Start)
+                    .spacing(Spacing::Space(0)),
+            );
 
             app.ui.systems_area = systems_area;
             app.ui.containers_area = containers_area;
+            app.ui.las_area = graph_area;
 
             if let Some(widget) = beszel.systems_widget() {
                 frame.render_stateful_widget(
@@ -55,15 +68,24 @@ impl UI {
             }
 
             if let Some(widget) = beszel.containers_widget() {
-                frame.render_widget(
+                frame.render_stateful_widget(
                     widget,
-                    containers_area
+                    containers_area,
+                    &mut app.ui.containers_state.borrow_mut(),
                 )
             } else {
                 let loading = Paragraph::new("Loading...");
                 frame.render_widget(
                     loading,
                     containers_area.centered_vertically(Constraint::Length(1)),
+                );
+            }
+
+            if let Some(widget) = beszel.load_averages_widget() {
+                frame.render_stateful_widget(
+                    widget,
+                    graph_area,
+                    &mut app.ui.las_state.borrow_mut(),
                 );
             }
         } else {
