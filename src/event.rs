@@ -21,7 +21,8 @@ pub enum Event {
 }
 
 pub enum AppEvent {
-    BeszelUpdate
+    BeszelUpdate,
+    BeszelInitialize
 }
 
 impl EventHandler {
@@ -34,6 +35,11 @@ impl EventHandler {
 
     pub async fn next(&mut self) -> Result<Event> {
         self.receiver.recv().await.ok_or_eyre("Bad")
+    }
+
+    pub async fn send(&self, event: AppEvent) -> Result<()> {
+        self.sender.send(Event::App(event))?;
+        return Ok(());
     }
 }
 
