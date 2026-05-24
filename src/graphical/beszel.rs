@@ -78,7 +78,7 @@ impl StatefulWidget for Systems {
         let num_systems = self.systems.len();
         let num_rows = num_systems / num_cols + if num_systems % 4 != 0 { 1 } else { 0 };
 
-        let area = area.clamp(Rect::new(area.left(), area.top(), area.width, (num_rows + 2) as u16));
+        // let area = area.clamp(Rect::new(area.left(), area.top(), area.width, (num_rows + 2) as u16));
         let area_inner = area.inner(Margin::new(1, 1));
 
         let num_pages = num_rows as u16 / area_inner.height + if num_rows as u16 % area_inner.height != 0 { 1 } else { 0 };
