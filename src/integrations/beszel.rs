@@ -1,10 +1,11 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
+use chrono::Utc;
 use color_eyre::Result;
 use reqwest::Url;
 
 use crate::{
-    config,
+    config::{self, read_config},
     graphical::{self},
     integrations::beszel::{
         api::Client,
@@ -20,12 +21,26 @@ pub struct BeszelHandler {
     client: Client,
     systems: Option<List<System>>,
     containers: Option<Containers>,
+    load_averages: Option<LoadAverages>,
 }
 
 #[derive(Debug)]
 struct Containers {
     containers: HashMap<String, Vec<Container>>,
     order: Vec<String>,
+}
+
+#[derive(Debug, Clone)]
+pub struct LoadAverages {
+    pub order: Vec<String>,
+    pub las: HashMap<String, Vec<LoadAverage>>,
+}
+
+/// la: [one minute, five minute, fifteen minute]
+#[derive(Debug, Clone)]
+pub struct LoadAverage {
+    pub la: [f64; 3],
+    pub t: chrono::DateTime<Utc>,
 }
 
 impl BeszelHandler {
@@ -40,6 +55,7 @@ impl BeszelHandler {
             client,
             systems: None,
             containers: None,
+            load_averages: None,
         })
     }
 
@@ -59,38 +75,99 @@ impl BeszelHandler {
     pub async fn update(&mut self) {
         let systems = self.client.systems().await;
 
-        if systems.is_err() {
+        if let Ok(systems) = systems {
+            self.systems = Some(systems.clone());
+
+            let order = if let Some(order) = read_config().expect("config parse error").beszel.load_averages_order {
+                order
+            } else {
+                self.systems_to_order(systems)
+            };
+
+            let las = self.load_averages(order.clone()).await;
+
+            if let Ok(las) = las {
+                let las: LoadAverages = LoadAverages { order, las };
+                self.load_averages = Some(las);
+            } else {
+                self.load_averages = None;
+            }
+        } else {
             self.systems = None;
-            self.containers = None;
-            return;
+            self.load_averages = None;
         }
 
-        let systems = systems.unwrap();
+        let containers = self.client.containers_all().await;
 
-        self.systems = Some(systems);
+        if let Ok(containers) = containers {
+            let mut hm_containers: HashMap<String, Vec<Container>> = HashMap::new();
+            let mut containers_order: Vec<String> = Vec::new();
+            for cont in containers.items {
+                let cont_name = self.system_id_to_name(cont.system.clone());
+                if let Some(cont_name) = cont_name {
+                    if !hm_containers.contains_key(&cont_name) {
+                        containers_order.push(cont_name.clone());
+                        hm_containers.insert(cont_name.clone(), vec![cont]);
+                    } else {
+                        hm_containers.get_mut(&cont_name).unwrap().push(cont);
+                    }
+                }
+            }
+            self.containers = Some(Containers {
+                containers: hm_containers,
+                order: containers_order,
+            });
+        } else {
+            self.containers = None
+        }
+    }
 
-        let containers = self
-            .client
-            .containers_all()
-            .await
-            .expect("error fetching containers");
+    async fn load_averages(&self, order: Vec<String>) -> Result<HashMap<String, Vec<LoadAverage>>> {
+        let mut hm: HashMap<String, Vec<LoadAverage>> = HashMap::new();
+        for name in order {
+            let stats = self.client.system(&name).await.unwrap();
+            let las: Vec<LoadAverage> = stats
+                .items
+                .iter()
+                .map(|item| {
+                    let la = serde_json::from_value::<records::Stats>(item.stats.clone())
+                        .unwrap()
+                        .la;
+                    // 2022-01-01 10:00:00.123Z
+                    LoadAverage {
+                        la,
+                        t: chrono::NaiveDateTime::parse_from_str(
+                            &item.created.trim(),
+                            "%Y-%m-%d %H:%M:%S.%3fZ",
+                        )
+                        .expect("wrong date format")
+                        .and_utc(),
+                    }
+                })
+                .collect();
+            hm.insert(name.to_string(), las);
+        }
+        return Ok(hm);
+    }
 
-        let mut hm_containers: HashMap<String, Vec<Container>> = HashMap::new();
-        let mut containers_order: Vec<String> = Vec::new();
-        for cont in containers.items {
-            let cont_name = self.system_id_to_name(cont.system.clone()).unwrap();
-            if !hm_containers.contains_key(&cont_name) {
-                containers_order.push(cont_name.clone());
-                hm_containers.insert(cont_name.clone(), vec![cont]);
-            } else {
-                hm_containers.get_mut(&cont_name).unwrap().push(cont);
+    fn systems_to_order(&self, systems: List<System>) -> Vec<String> {
+        let mut hs: HashSet<String> = HashSet::new();
+        let mut order: Vec<String> = Vec::new();
+        for system in &systems.items {
+            if !hs.contains(&system.name) {
+                order.push(system.name.clone());
+                hs.insert(system.name.clone());
             }
         }
+        return order;
+    }
 
-        self.containers = Some(Containers {
-            containers: hm_containers,
-            order: containers_order,
-        });
+    pub fn load_averages_widget(&self) -> Option<graphical::beszel::LAGraph> {
+        if let Some(las) = &self.load_averages {
+            Some(graphical::beszel::LAGraph::new(las))
+        } else {
+            None
+        }
     }
 
     pub fn systems_widget(&self) -> Option<graphical::beszel::Systems> {
