@@ -2,7 +2,7 @@ use std::cell::RefCell;
 
 use ratatui::{
     Frame,
-    layout::{Constraint, Layout, Rect},
+    layout::{Constraint, Flex, Layout, Rect, Spacing},
     style::Style,
     widgets::{Block, Paragraph},
 };
@@ -27,13 +27,15 @@ impl UI {
 
         frame.render_widget(Logo::new(), Rect::new(4, 1, 1, 1));
 
-        let main_area = Rect::new(5, 12, frame.area().width - 10, frame.area().height - 12);
+        let main_area = Rect::new(5, 12, frame.area().width - 10, frame.area().height - 15);
 
         // frame.render_widget(Block::bordered(), main_area);
+        let [beszel_area, _] = main_area.layout(&Layout::horizontal([Constraint::Percentage(60), Constraint::Percentage(40)]));
 
         if let Some(beszel) = &app.beszel_handler {
-            let systems_area = Rect::new(main_area.left(), main_area.top(), 70, 3);
-            let containers_area = Rect::new(main_area.left(), main_area.top() + 3 + 1, 70, 3);
+            let [systems_area, containers_area] =  beszel_area.layout(&Layout::vertical([Constraint::Percentage(30), Constraint::Percentage(70)]).flex(Flex::SpaceEvenly).spacing(Spacing::Space(1)));
+            // let systems_area = layout //Rect::new(main_area.left(), main_area.top(), 70, 3);
+            // let containers_area = Rect::new(main_area.left(), main_area.top() + 3 + 1, 70, 3);
 
             app.ui.systems_area = systems_area;
             app.ui.containers_area = containers_area;
@@ -41,7 +43,7 @@ impl UI {
             if let Some(widget) = beszel.systems_widget() {
                 frame.render_stateful_widget(
                     widget,
-                    Rect::new(main_area.left(), main_area.top(), 70, 3),
+                    systems_area,
                     &mut app.ui.systems_state.borrow_mut(),
                 );
             } else {
@@ -55,7 +57,7 @@ impl UI {
             if let Some(widget) = beszel.containers_widget() {
                 frame.render_widget(
                     widget,
-                    Rect::new(main_area.left(), main_area.top() + 5, 70, 10),
+                    containers_area
                 )
             } else {
                 let loading = Paragraph::new("Loading...");
