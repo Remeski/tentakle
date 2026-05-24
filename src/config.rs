@@ -27,8 +27,10 @@ pub struct Args {
 }
 
 pub fn read_config() -> Result<Config> {
-    Args::parse();
+    let args = Args::parse();
 
-    let config: Config = toml::from_str(&fs::read_to_string("config.toml")?)?;
+    let config = args.config;
+
+    let config: Config = toml::from_str(&fs::read_to_string(config.clone()).expect(&format!("couldn't find config file at {}", config)))?;
     Ok(config)
 }
