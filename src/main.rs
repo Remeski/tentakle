@@ -1,6 +1,8 @@
 use color_eyre::eyre::Result;
 use crossterm::ExecutableCommand;
 
+use clap::{Parser};
+
 use crate::app::App;
 
 mod integrations;
@@ -14,6 +16,8 @@ mod utils;
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    config::Args::parse();
+
     logs::initialize_logging()?;
 
     std::io::stdout().execute(crossterm::event::EnableMouseCapture)?;

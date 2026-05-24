@@ -5,6 +5,8 @@ use crossterm::event::{Event as CrosstermEvent, EventStream};
 use futures::{FutureExt, StreamExt};
 use tokio::sync::mpsc::{self, UnboundedSender};
 
+use crate::config;
+
 const TICK_PER_SECOND: usize = 24;
 
 pub struct EventHandler {
@@ -47,7 +49,7 @@ impl EventTask {
     async fn run(self) -> Result<()> {
         let mut term_reader = EventStream::new();
         let mut ticker = tokio::time::interval(Duration::from_secs_f32(1.0 / TICK_PER_SECOND as f32));
-        let mut beszel_ticker = tokio::time::interval(Duration::from_secs_f32(5.0));
+        let mut beszel_ticker = tokio::time::interval(Duration::from_secs(config::read_config()?.beszel.poll_interval.unwrap_or(15) as u64));
         loop {
             tokio::select! {
                 _ = self.sender.closed() => {

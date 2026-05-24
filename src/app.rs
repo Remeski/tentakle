@@ -8,7 +8,6 @@ use ratatui::{
 
 use crate::{
     event::{AppEvent, Event, EventHandler},
-    graphical::beszel::SystemsState,
     integrations::beszel::BeszelHandler,
     ui::{self, UI},
     utils::InsideRect,
@@ -18,7 +17,6 @@ pub struct App {
     exit: bool,
     event_handler: EventHandler,
     pub beszel_handler: Option<BeszelHandler>,
-    pub systems_state: RefCell<SystemsState>,
     pub ui: UI,
 }
 
@@ -28,7 +26,6 @@ impl App {
             exit: false,
             event_handler: EventHandler::new(),
             beszel_handler: None,
-            systems_state: RefCell::new(SystemsState::default()),
             ui: UI::default(),
         }
     }
@@ -69,7 +66,7 @@ impl App {
 
     fn handle_click(&mut self, c: u16, r: u16) {
         if self.ui.systems_area.inside(c as usize, r as usize) {
-            self.systems_state.borrow_mut().next_page();
+            self.ui.systems_state.borrow_mut().next_page();
         }
     }
 

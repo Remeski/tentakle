@@ -1,12 +1,15 @@
+use std::cell::RefCell;
+
 use ratatui::{Frame, layout::Rect, style::Style, widgets::Block};
 
 use crate::{
-    app::App, graphical::{Logo, colors}
+    app::App, graphical::{Logo, beszel::SystemsState, colors}
 };
 
-#[derive(Default, Clone)]
+#[derive(Default)]
 pub struct UI {
-    pub systems_area: Rect
+    pub systems_area: Rect,
+    pub systems_state: RefCell<SystemsState>,
 }
 
 impl UI {
@@ -27,7 +30,7 @@ impl UI {
                 frame.render_stateful_widget(
                     widget,
                     Rect::new(main_area.left(), main_area.top(), 70, 3),
-                    &mut app.systems_state.borrow_mut(),
+                    &mut app.ui.systems_state.borrow_mut(),
                 );
                 app.ui.systems_area = systems_area;
             }
