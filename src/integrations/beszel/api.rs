@@ -1,7 +1,7 @@
 use color_eyre::{Result, eyre::eyre};
 use reqwest::{RequestBuilder, Url, header::AUTHORIZATION, multipart::Form};
 
-use crate::integrations::beszel::records::{self, Container, List, System, SystemStats};
+use crate::{integrations::beszel::records::{self, Container, List, System, SystemStats}, trace_dbg};
 
 pub struct Client {
     http_handler: HTTPHandler,
@@ -46,10 +46,13 @@ impl Client {
         let rb = self
             .http_handler
             .get("collections/containers/records")?
-            .query(&[(
-                "filter",
-                format!("(system.name='{}')", system_name).as_str(),
-            )]);
+            .query(&[
+                (
+                    "filter",
+                    format!("(system.name='{}')", system_name).as_str(),
+                ),
+                ("sort", "cpu"),
+            ]);
         let js = rb.send().await?.json::<List<Container>>().await?;
         Ok(js)
     }
@@ -57,8 +60,10 @@ impl Client {
     pub async fn containers_all(&self) -> Result<List<Container>> {
         let rb = self
             .http_handler
-            .get("collections/containers/records")?;
+            .get("collections/containers/records")?
+            .query(&[("sort", "-cpu")]);
         let js = rb.send().await?.json::<List<Container>>().await?;
+        trace_dbg!(&js);
         Ok(js)
     }
 }

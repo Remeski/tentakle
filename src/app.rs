@@ -40,16 +40,12 @@ impl App {
     }
 
     fn handle_crossterm(&mut self, ce: CrosstermEvent) -> Result<()> {
-        trace_dbg!(&ce);
         match ce {
             CrosstermEvent::Key(ke) => match ke.code {
                 KeyCode::Char('q') => {
                     self.exit = true;
                 }
                 _ => {}
-            },
-            CrosstermEvent::Mouse(m) => {
-                trace_dbg!(m);
             }
             _ => {}
         }
