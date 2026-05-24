@@ -16,7 +16,6 @@ use crate::{
     },
 };
 
-#[derive(Default)]
 pub struct UI {
     pub systems_area: Rect,
     pub containers_area: Rect,
@@ -24,6 +23,27 @@ pub struct UI {
     pub systems_state: RefCell<SystemsState>,
     pub containers_state: RefCell<ContainersState>,
     pub las_state: RefCell<LASState>,
+    beszel_layout: [Constraint; 3],
+    focus: usize
+}
+
+impl Default for UI {
+    fn default() -> Self {
+        Self {
+            systems_area: Rect::default(),
+            containers_area: Rect::default(),
+            las_area: Rect::default(),
+            systems_state: RefCell::default(),
+            containers_state: RefCell::default(),
+            las_state: RefCell::default(),
+            beszel_layout: [
+                Constraint::Length(4),
+                Constraint::Fill(3),
+                Constraint::Fill(2),
+            ],
+            focus: 1
+        }
+    }
 }
 
 impl UI {
@@ -44,7 +64,7 @@ impl UI {
 
         if let Some(beszel) = &app.beszel_handler {
             let [systems_area, containers_area, graph_area] = beszel_area.layout(
-                &Layout::vertical([Constraint::Length(4), Constraint::Max(10), Constraint::Fill(1)])
+                &Layout::vertical(app.ui.beszel_layout)
                     .flex(Flex::Start)
                     .spacing(Spacing::Space(0)),
             );
@@ -95,5 +115,21 @@ impl UI {
                 main_area.centered_vertically(Constraint::Length(1)),
             );
         }
+    }
+
+    pub fn focus_containers(&mut self) -> bool {
+        self.beszel_layout[1] = Constraint::Fill(3);
+        self.beszel_layout[2] = Constraint::Fill(2);
+        let changed = self.focus != 1;
+        self.focus = 1;
+        return changed
+    }
+    
+    pub fn focus_las(&mut self) -> bool {
+        self.beszel_layout[1] = Constraint::Fill(2);
+        self.beszel_layout[2] = Constraint::Fill(3);
+        let changed = self.focus != 2;
+        self.focus = 2;
+        return changed
     }
 }
