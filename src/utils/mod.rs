@@ -48,11 +48,22 @@ impl Grid {
     }
 }
 
+pub trait InsideRect {
+    fn inside(&self, c: usize, r: usize) -> bool;
+}
+
+impl InsideRect for Rect {
+    fn inside(&self, c: usize, r: usize) -> bool {
+        let (x,x_top,y,y_top) = (self.x as usize, (self.x + self.width) as usize, self.y as usize, (self.y + self.height) as usize);
+        c >= x && c <= x_top && r >= y && r <= y_top
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use ratatui::layout::{Constraint, Rect};
 
-    use crate::utils::Grid;
+    use crate::utils::{Grid, InsideRect};
 
     #[test]
     fn test_single_dimensional() {
@@ -82,5 +93,17 @@ mod tests {
         for a in grid.cols() {
             dbg!(a);
         }
+    }
+
+    #[test]
+    fn test_inside_rect() {
+        let r = Rect::new(5, 5, 5, 5);
+        assert!(!r.inside(3, 3));
+        assert!(r.inside(7, 9));
+        assert!(r.inside(5, 5));
+        assert!(r.inside(5, 10));
+        assert!(!r.inside(11, 10));
+        assert!(r.inside(10, 10));
+        assert!(!r.inside(15, 18));
     }
 }
