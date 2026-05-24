@@ -66,10 +66,14 @@ impl App {
             self.ui.systems_state.borrow_mut().next_page();
         }
         if self.ui.containers_area.inside(c as usize, r as usize) {
-            self.ui.containers_state.borrow_mut().next_page();
+            if !self.ui.focus_containers() {
+                self.ui.containers_state.borrow_mut().next_page();
+            }
         }
         if self.ui.las_area.inside(c as usize, r as usize) {
-            self.ui.las_state.borrow_mut().next_host();
+            if !self.ui.focus_las() {
+                self.ui.las_state.borrow_mut().next_host();
+            }
         }
     }
 
