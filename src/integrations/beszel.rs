@@ -15,12 +15,14 @@ use crate::{
 pub mod api;
 pub mod records;
 
+#[derive(Debug)]
 pub struct BeszelHandler {
     client: Client,
     systems: Option<List<System>>,
     containers: Option<Containers>,
 }
 
+#[derive(Debug)]
 struct Containers {
     containers: HashMap<String, Vec<Container>>,
     order: Vec<String>,
@@ -55,7 +57,16 @@ impl BeszelHandler {
     }
 
     pub async fn update(&mut self) {
-        let systems = self.client.systems().await.expect("error fetching systems");
+        let systems = self.client.systems().await;
+
+        if systems.is_err() {
+            self.systems = None;
+            self.containers = None;
+            return;
+        }
+
+        let systems = systems.unwrap();
+
         self.systems = Some(systems);
 
         let containers = self
@@ -63,6 +74,7 @@ impl BeszelHandler {
             .containers_all()
             .await
             .expect("error fetching containers");
+
         let mut hm_containers: HashMap<String, Vec<Container>> = HashMap::new();
         let mut containers_order: Vec<String> = Vec::new();
         for cont in containers.items {

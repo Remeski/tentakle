@@ -1,4 +1,4 @@
-use std::cell::RefCell;
+use std::{cell::RefCell, time::Duration};
 
 use color_eyre::eyre::Result;
 use ratatui::{
@@ -31,12 +31,11 @@ impl App {
     }
 
     pub async fn run(mut self, mut term: DefaultTerminal) -> Result<()> {
-        let beszel_handler = BeszelHandler::new().await?;
-        self.beszel_handler = Some(beszel_handler);
+        self.event_handler.send(AppEvent::BeszelInitialize).await?;
 
         while !self.exit {
-            self.handle_events().await?;
             term.draw(|frame| ui::UI::render(&mut self, frame))?;
+            self.handle_events().await?;
         }
 
         return Ok(());
@@ -78,6 +77,15 @@ impl App {
             Event::App(AppEvent::BeszelUpdate) => {
                 if let Some(bh) = &mut self.beszel_handler {
                     bh.update().await;
+                } else {
+                    self.event_handler.send(AppEvent::BeszelInitialize).await?;
+                }
+            }
+            Event::App(AppEvent::BeszelInitialize) => {
+                let beszel_handler = BeszelHandler::new().await;
+                if !beszel_handler.is_err() {
+                    self.beszel_handler = Some(beszel_handler.unwrap());
+                    self.event_handler.send(AppEvent::BeszelUpdate).await?;
                 }
             }
             _ => {}

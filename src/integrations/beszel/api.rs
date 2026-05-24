@@ -3,6 +3,7 @@ use reqwest::{RequestBuilder, Url, header::AUTHORIZATION, multipart::Form};
 
 use crate::{integrations::beszel::records::{self, Container, List, System, SystemStats}};
 
+#[derive(Debug)]
 pub struct Client {
     http_handler: HTTPHandler,
 }
@@ -68,6 +69,7 @@ impl Client {
     }
 }
 
+#[derive(Debug)]
 struct HTTPHandler {
     token: Option<String>,
     base_url: Url,

@@ -6,7 +6,7 @@ use ratatui::style::{Style, Styled, Stylize};
 use ratatui::widgets::{Block, Paragraph, StatefulWidget, Widget};
 use tokio::time::{self, Instant};
 
-use crate::graphical::colors;
+use crate::graphical::{PagedBlock, colors};
 use crate::integrations::beszel::records::System;
 use crate::integrations::beszel::records::{Container, List};
 use crate::utils::Grid;
@@ -84,19 +84,7 @@ impl StatefulWidget for Systems {
         let num_pages = num_rows as u16 / area_inner.height + if num_rows as u16 % area_inner.height != 0 { 1 } else { 0 };
         state.num_pages = num_pages as usize;
 
-        Block::bordered()
-            .title("Hosts".fg(colors::FG_TEXT))
-            .title_bottom(format!("{} / {}", state.page + 1, num_pages))
-            .border_type(ratatui::widgets::BorderType::Rounded)
-            .border_style(Style::new().fg(colors::BORDER))
-            .bg(colors::BG_CONT)
-            .render(area, buf);
-        // let layout = Layout::vertical(vec![Constraint::Length(1); self.systems.len()]).split(area);
-
-        Block::new()
-            .style(Style::new().fg(colors::FG_TEXT))
-            .bg(colors::BG_CONT)
-            .render(area.inner(Margin::new(1, 1)), buf);
+        PagedBlock::new("Hosts", state.page, state.num_pages).render(area, buf);
 
         let layout = Grid::new(
             area_inner,

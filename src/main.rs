@@ -16,6 +16,8 @@ mod utils;
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    color_eyre::install()?;
+
     config::Args::parse();
 
     logs::initialize_logging()?;
@@ -24,9 +26,10 @@ async fn main() -> Result<()> {
     let terminal = ratatui::init();
     let app = App::new();
 
-    app.run(terminal).await?;
+    let run = app.run(terminal).await;
 
     ratatui::restore();
     std::io::stdout().execute(crossterm::event::DisableMouseCapture)?;
-    return Ok(());
+
+    return run
 }
