@@ -18,7 +18,12 @@ pub mod records;
 pub struct BeszelHandler {
     client: Client,
     systems: Option<List<System>>,
-    containers: Option<HashMap<String, Vec<Container>>>,
+    containers: Option<Containers>,
+}
+
+struct Containers {
+    containers: HashMap<String, Vec<Container>>,
+    order: Vec<String>,
 }
 
 impl BeszelHandler {
@@ -59,15 +64,21 @@ impl BeszelHandler {
             .await
             .expect("error fetching containers");
         let mut hm_containers: HashMap<String, Vec<Container>> = HashMap::new();
+        let mut containers_order: Vec<String> = Vec::new();
         for cont in containers.items {
             let cont_name = self.system_id_to_name(cont.system.clone()).unwrap();
             if !hm_containers.contains_key(&cont_name) {
+                containers_order.push(cont_name.clone());
                 hm_containers.insert(cont_name.clone(), vec![cont]);
             } else {
                 hm_containers.get_mut(&cont_name).unwrap().push(cont);
             }
         }
-        self.containers = Some(hm_containers);
+
+        self.containers = Some(Containers {
+            containers: hm_containers,
+            order: containers_order,
+        });
     }
 
     pub fn systems_widget(&self) -> Option<graphical::beszel::Systems> {
@@ -80,7 +91,10 @@ impl BeszelHandler {
 
     pub fn containers_widget<'a>(&'a self) -> Option<graphical::beszel::Containers<'a>> {
         if let Some(containers) = &self.containers {
-            Some(graphical::beszel::Containers::new(containers))
+            Some(graphical::beszel::Containers::new(
+                &containers.containers,
+                &containers.order,
+            ))
         } else {
             None
         }
