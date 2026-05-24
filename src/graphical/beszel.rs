@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::time::Duration;
 
-use ratatui::layout::{Constraint, Flex, Layout, Margin, Rect, Size};
+use ratatui::layout::{Constraint, Flex, Layout, Margin, Rect};
 use ratatui::style::{Style, Styled, Stylize};
 use ratatui::widgets::{Block, Paragraph, StatefulWidget, Widget};
 use tokio::time::{self, Instant};
@@ -17,7 +17,9 @@ pub struct Systems {
 
 pub struct SystemsState {
     blink: bool,
-    timer: time::Instant,
+    blink_timer: time::Instant,
+    page: usize,
+    num_pages: usize
 }
 
 struct SystemStatus {
@@ -39,11 +41,20 @@ impl Systems {
     }
 }
 
+impl SystemsState {
+    pub fn next_page(&mut self) {
+        self.page += 1;
+        self.page %= self.num_pages;
+    }
+}
+
 impl Default for SystemsState {
     fn default() -> Self {
         SystemsState {
             blink: false,
-            timer: Instant::now(),
+            blink_timer: Instant::now(),
+            page: 0,
+            num_pages: 0
         }
     }
 }
@@ -58,17 +69,24 @@ impl StatefulWidget for Systems {
     ) where
         Self: Sized,
     {
-        if state.timer.elapsed() > Duration::from_secs_f32(0.5) {
+        if state.blink_timer.elapsed() > Duration::from_secs_f32(0.5) {
             state.blink = !state.blink;
-            state.timer = Instant::now();
+            state.blink_timer = Instant::now();
         }
 
+        let num_cols = 4;
         let num_systems = self.systems.len();
-        let num_rows = num_systems / 4 + if num_systems % 4 != 0 { 1 } else { 0 };
+        let num_rows = num_systems / num_cols + if num_systems % 4 != 0 { 1 } else { 0 };
+
         let area = area.clamp(Rect::new(area.left(), area.top(), area.width, (num_rows + 2) as u16));
+        let area_inner = area.inner(Margin::new(1, 1));
+
+        let num_pages = num_rows as u16 / area_inner.height + if num_rows as u16 % area_inner.height != 0 { 1 } else { 0 };
+        state.num_pages = num_pages as usize;
 
         Block::bordered()
             .title("Hosts".fg(colors::FG_TEXT))
+            .title_bottom(format!("{} / {}", state.page + 1, num_pages))
             .border_type(ratatui::widgets::BorderType::Rounded)
             .border_style(Style::new().fg(colors::BORDER))
             .bg(colors::BG_CONT)
@@ -81,13 +99,13 @@ impl StatefulWidget for Systems {
             .render(area.inner(Margin::new(1, 1)), buf);
 
         let layout = Grid::new(
-            area.inner(Margin::new(1, 1)),
-            vec![Constraint::Percentage(25); 4],
+            area_inner,
+            vec![Constraint::Percentage(25); num_cols],
             vec![Constraint::Length(1); num_rows],
         );
 
         for (i, area) in layout.single_dimensional().iter().enumerate() {
-            let s = self.systems.get(i);
+            let s = self.systems.get(num_cols*(area_inner.height as usize)*state.page + i);
             if s.is_none() {
                 break;
             }

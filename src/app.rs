@@ -7,14 +7,19 @@ use ratatui::{
 };
 
 use crate::{
-    graphical::beszel::SystemsState, event::{AppEvent, Event, EventHandler}, integrations::beszel::BeszelHandler, trace_dbg, ui
+    event::{AppEvent, Event, EventHandler},
+    graphical::beszel::SystemsState,
+    integrations::beszel::BeszelHandler,
+    ui::{self, UI},
+    utils::InsideRect,
 };
 
 pub struct App {
     exit: bool,
     event_handler: EventHandler,
     pub beszel_handler: Option<BeszelHandler>,
-    pub systems_state: RefCell<SystemsState>
+    pub systems_state: RefCell<SystemsState>,
+    pub ui: UI,
 }
 
 impl App {
@@ -23,7 +28,8 @@ impl App {
             exit: false,
             event_handler: EventHandler::new(),
             beszel_handler: None,
-            systems_state: RefCell::new(SystemsState::default())
+            systems_state: RefCell::new(SystemsState::default()),
+            ui: UI::default(),
         }
     }
 
@@ -33,7 +39,7 @@ impl App {
 
         while !self.exit {
             self.handle_events().await?;
-            term.draw(|frame| ui::render(&self, frame))?;
+            term.draw(|frame| ui::UI::render(&mut self, frame))?;
         }
 
         return Ok(());
@@ -46,10 +52,25 @@ impl App {
                     self.exit = true;
                 }
                 _ => {}
+            },
+            CrosstermEvent::Mouse(me) => {
+                let (c, r) = (me.column, me.row);
+                match me.kind {
+                    crossterm::event::MouseEventKind::Up(_) => {
+                        self.handle_click(c, r);
+                    }
+                    _ => {}
+                }
             }
             _ => {}
         }
         return Ok(());
+    }
+
+    fn handle_click(&mut self, c: u16, r: u16) {
+        if self.ui.systems_area.inside(c as usize, r as usize) {
+            self.systems_state.borrow_mut().next_page();
+        }
     }
 
     async fn handle_events(&mut self) -> Result<()> {
