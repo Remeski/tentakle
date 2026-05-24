@@ -5,12 +5,12 @@ use crossterm::event::{Event as CrosstermEvent, EventStream};
 use futures::{FutureExt, StreamExt};
 use tokio::sync::mpsc::{self, UnboundedSender};
 
-use crate::config;
+use crate::{config, integrations::ntfy::NtfyMessage};
 
 const TICK_PER_SECOND: usize = 24;
 
 pub struct EventHandler {
-    sender: mpsc::UnboundedSender<Event>,
+    pub sender: mpsc::UnboundedSender<Event>,
     receiver: mpsc::UnboundedReceiver<Event>,
 }
 
@@ -23,8 +23,9 @@ pub enum Event {
 pub enum AppEvent {
     BeszelUpdate,
     BeszelInitialize,
-    BeszelChangeLoadAverageHost
-
+    BeszelChangeLoadAverageHost,
+    NtfyMsg(NtfyMessage),
+    ClearMsg
 }
 
 impl EventHandler {

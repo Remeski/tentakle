@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use color_eyre::eyre::Result;
 use ratatui::{
     DefaultTerminal,
@@ -6,8 +8,8 @@ use ratatui::{
 
 use crate::{
     event::{AppEvent, Event, EventHandler},
-    integrations::beszel::BeszelHandler,
-    ui::{self, UI},
+    integrations::{beszel::BeszelHandler, ntfy::NtfyHandler},
+    ui::{self, Message, UI},
     utils::InsideRect,
 };
 
@@ -15,6 +17,7 @@ pub struct App {
     exit: bool,
     event_handler: EventHandler,
     pub beszel_handler: Option<BeszelHandler>,
+    pub ntfy_handler: Option<NtfyHandler>,
     pub ui: UI,
 }
 
@@ -24,12 +27,16 @@ impl App {
             exit: false,
             event_handler: EventHandler::new(),
             beszel_handler: None,
+            ntfy_handler: None,
             ui: UI::default(),
         }
     }
 
     pub async fn run(mut self, mut term: DefaultTerminal) -> Result<()> {
         self.event_handler.send(AppEvent::BeszelInitialize).await?;
+
+        let ntfy_handler = NtfyHandler::new(self.event_handler.sender.clone()).await;
+        // self.ntfy_handler = Some(ntfy_handler);
 
         while !self.exit {
             term.draw(|frame| ui::UI::render(&mut self, frame))?;
@@ -62,6 +69,11 @@ impl App {
     }
 
     fn handle_click(&mut self, c: u16, r: u16) {
+        if self.ui.message.is_some() {
+            self.ui.message = None;
+            return;
+        }
+
         if self.ui.systems_area.inside(c as usize, r as usize) {
             self.ui.systems_state.borrow_mut().next_page();
         }
@@ -98,6 +110,17 @@ impl App {
             }
             Event::App(AppEvent::BeszelChangeLoadAverageHost) => {
                 self.ui.las_state.borrow_mut().next_host();
+            }
+            Event::App(AppEvent::NtfyMsg(msg)) => {
+                if msg.message.is_some() {
+                    self.ui.message = Some(Message {
+                        title: msg.title.unwrap_or("".to_string()),
+                        content: msg.message.unwrap()
+                    });
+                }
+            }
+            Event::App(AppEvent::ClearMsg) => {
+                self.ui.message = None;
             }
             _ => {}
         };

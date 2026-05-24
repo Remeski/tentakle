@@ -4,19 +4,25 @@ use ratatui::{
     Frame,
     layout::{Constraint, Flex, Layout, Rect, Spacing},
     style::Style,
-    widgets::{Block, Paragraph},
+    widgets::{Block, Paragraph, Widget},
 };
 
 use crate::{
     app::App,
     graphical::{
-        Logo,
+        Logo, Popup,
         beszel::{ContainersState, LASState, SystemsState},
         colors,
     },
 };
 
+pub struct Message {
+    pub title: String,
+    pub content: String
+}
+
 pub struct UI {
+    pub message: Option<Message>,
     pub systems_area: Rect,
     pub containers_area: Rect,
     pub las_area: Rect,
@@ -24,12 +30,13 @@ pub struct UI {
     pub containers_state: RefCell<ContainersState>,
     pub las_state: RefCell<LASState>,
     beszel_layout: [Constraint; 3],
-    focus: usize
+    focus: usize,
 }
 
 impl Default for UI {
     fn default() -> Self {
         Self {
+            message: None,
             systems_area: Rect::default(),
             containers_area: Rect::default(),
             las_area: Rect::default(),
@@ -41,13 +48,14 @@ impl Default for UI {
                 Constraint::Fill(3),
                 Constraint::Fill(2),
             ],
-            focus: 1
+            focus: 1,
         }
     }
 }
 
 impl UI {
     pub fn render(app: &mut App, frame: &mut Frame<'_>) {
+        let area = frame.area();
         let bg = Block::new().style(Style::new().bg(colors::BG));
 
         frame.render_widget(bg, frame.area());
@@ -115,6 +123,17 @@ impl UI {
                 main_area.centered_vertically(Constraint::Length(1)),
             );
         }
+
+        if let Some(message) = &app.ui.message {
+            let popup_area = Rect {
+                x: area.left() + area.width / 4,
+                y: area.top() + area.height / 3,
+                width: area.width / 2,
+                height: area.height / 3,
+            };
+            let popup = Popup::default().content(message.content.clone()).title(message.title.clone());
+            frame.render_widget(popup, popup_area);
+        }
     }
 
     pub fn focus_containers(&mut self) -> bool {
@@ -122,14 +141,14 @@ impl UI {
         self.beszel_layout[2] = Constraint::Fill(2);
         let changed = self.focus != 1;
         self.focus = 1;
-        return changed
+        return changed;
     }
-    
+
     pub fn focus_las(&mut self) -> bool {
         self.beszel_layout[1] = Constraint::Fill(2);
         self.beszel_layout[2] = Constraint::Fill(3);
         let changed = self.focus != 2;
         self.focus = 2;
-        return changed
+        return changed;
     }
 }
