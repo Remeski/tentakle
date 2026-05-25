@@ -128,6 +128,8 @@ pub struct Containers<'a> {
 #[derive(Default)]
 pub struct ContainersState {
     page: usize,
+    subpage_offsets: HashMap<String, usize>,
+    subpage_offsets_next: HashMap<String, usize>,
     num_pages: usize,
 }
 
@@ -161,27 +163,40 @@ impl<'a> StatefulWidget for Containers<'a> {
             vec![Constraint::Length(1); inner_area.height as usize],
         );
 
-        // let container_names = self.containers.keys();
+        let n_rows = inner_area.height - 2;
 
         grid.cols().iter().enumerate().for_each(|(i, col)| {
-            let container_name = self.order.get(state.page * num_cols + i);
-            if let Some(container_name) = container_name {
-                Paragraph::new(
-                    format!("{}", container_name.clone()).set_style(Style::new().bold()),
-                )
-                .render(*col.get(0).unwrap(), buf);
-                let containers = self.containers.get(container_name).unwrap();
-                let containers_len = containers.len();
+            let system_index = state.page * num_cols + i;
+            let system_name = self.order.get(system_index);
+            if let Some(system_name) = system_name {
+                Paragraph::new(format!("{}", system_name.clone()).set_style(Style::new().bold()))
+                    .render(*col.get(0).unwrap(), buf);
+
+                let containers = self.containers.get(system_name).unwrap();
+
+                let offset = state
+                    .subpage_offsets
+                    .get(system_name)
+                    .unwrap_or(&(0 as usize));
+
+                let containers_len = containers.len() - offset;
+
                 let remaining = col.iter().skip(1);
                 let remaining_len = remaining.len();
+
                 for (i, rect) in remaining.enumerate() {
-                    if i == remaining_len - 1 && containers_len > remaining_len {
-                        let n_hidden = containers.len() as isize - i as isize;
+                    if i == remaining_len - 1 && containers_len > remaining_len - 1 {
+                        let n_hidden = containers_len as isize - i as isize;
+
+                        state
+                            .subpage_offsets_next
+                            .insert(system_name.clone(), *offset + n_rows as usize);
+
                         Paragraph::new(format!("{} hidden", n_hidden).fg(colors::BORDER))
                             .render(*rect, buf);
-                        continue;
+                        break;
                     }
-                    let container = containers.get(i);
+                    let container = containers.get(i + offset);
                     if let Some(container) = container {
                         let symbol_color = match container.health {
                             0 => colors::SUCCESS,
@@ -216,8 +231,14 @@ impl<'a> StatefulWidget for Containers<'a> {
 
 impl ContainersState {
     pub fn next_page(&mut self) {
-        self.page += 1;
-        self.page %= self.num_pages;
+        if self.subpage_offsets_next == self.subpage_offsets {
+            self.subpage_offsets = HashMap::new();
+            self.subpage_offsets_next = HashMap::new();
+            self.page += 1;
+            self.page %= self.num_pages;
+        } else {
+            self.subpage_offsets = self.subpage_offsets_next.clone();
+        }
     }
 }
 
