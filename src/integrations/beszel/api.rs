@@ -150,8 +150,8 @@ mod tests {
         let pihole = beszel.system("HZ_FI1").await?;
         dbg!(pihole);
 
-        // let containers = beszel.containers_all().await?;
-        // dbg!(containers);
+        let containers = beszel.containers_all().await?;
+        dbg!(&containers);
 
         Ok(())
     }

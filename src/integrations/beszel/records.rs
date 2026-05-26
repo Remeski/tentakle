@@ -1,3 +1,4 @@
+use chrono::{DateTime, Utc};
 use serde::Deserialize;
 
 #[allow(non_snake_case, dead_code)]
@@ -64,7 +65,8 @@ pub struct Container {
     pub name: String,
     pub id: String,
     pub system: String,
-    pub updated: isize,
+    #[serde(with = "chrono::serde::ts_milliseconds")]
+    pub updated: DateTime<Utc>,
     pub cpu: f32,
     pub memory: f32,
     pub net: f32,
