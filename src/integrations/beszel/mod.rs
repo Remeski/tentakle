@@ -116,11 +116,13 @@ impl BeszelHandler {
             for cont in containers.items {
                 let cont_name = self.system_id_to_name(cont.system.clone());
                 if let Some(cont_name) = cont_name {
-                    if !hm_containers.contains_key(&cont_name) {
-                        containers_order.push(cont_name.clone());
-                        hm_containers.insert(cont_name.clone(), vec![cont]);
-                    } else {
-                        hm_containers.get_mut(&cont_name).unwrap().push(cont);
+                    if (chrono::Utc::now() - cont.updated).num_seconds() < 90 {
+                        if !hm_containers.contains_key(&cont_name) {
+                            containers_order.push(cont_name.clone());
+                            hm_containers.insert(cont_name.clone(), vec![cont]);
+                        } else {
+                            hm_containers.get_mut(&cont_name).unwrap().push(cont);
+                        }
                     }
                 }
             }
