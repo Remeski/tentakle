@@ -5,7 +5,7 @@ use crossterm::event::{Event as CrosstermEvent, EventStream};
 use futures::{FutureExt, StreamExt};
 use tokio::sync::mpsc::{self, UnboundedSender};
 
-use crate::{app::App, config, integrations::ntfy::NtfyMessage};
+use crate::{app::App, integrations::ntfy::NtfyMessage};
 
 const TICK_PER_SECOND: usize = 24;
 
@@ -39,7 +39,6 @@ pub enum NtfyEvent {
 }
 
 
-
 impl EventHandler {
     pub fn new() -> Self {
         let (sender, receiver) = mpsc::unbounded_channel();
@@ -70,8 +69,6 @@ impl EventTask {
     async fn run(self) -> Result<()> {
         let mut term_reader = EventStream::new();
         let mut ticker = tokio::time::interval(Duration::from_secs_f32(1.0 / TICK_PER_SECOND as f32));
-        // let mut beszel_ticker = tokio::time::interval(Duration::from_secs(config::read_config()?.beszel.poll_interval.unwrap_or(15) as u64));
-        // let mut lasstate_ticker = tokio::time::interval(Duration::from_secs(30));
         loop {
             tokio::select! {
                 _ = self.sender.closed() => {
@@ -80,12 +77,6 @@ impl EventTask {
                 _ = ticker.tick() => {
                     self.sender.send(Event::Tick)?
                 }
-                // _ = beszel_ticker.tick() => {
-                //     self.sender.send(Event::App(AppEvent::Beszel(BeszelEvent::Update)))?
-                // }
-                // _ = lasstate_ticker.tick() => {
-                //     self.sender.send(Event::App(AppEvent::Beszel(BeszelEvent::ChangeLoadAverageHost)))?
-                // }
                 Some(Ok(e)) = term_reader.next().fuse() => {
                     self.sender.send(Event::Crossterm(e))?
                 }
