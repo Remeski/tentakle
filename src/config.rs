@@ -8,6 +8,7 @@ use serde::Deserialize;
 #[derive(Deserialize)]
 pub struct Config {
     pub beszel: Beszel,
+    // pub uptimekuma: Uptimekuma
 }
 
 #[derive(Deserialize)]
@@ -18,6 +19,12 @@ pub struct Beszel {
     pub poll_interval: Option<usize>,
     pub load_averages_order: Option<Vec<String>>
 }
+
+// #[derive(Deserialize)]
+// pub struct Uptimekuma {
+//     pub url: String,
+//     pub api_key: String
+// }
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]

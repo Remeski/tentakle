@@ -4,7 +4,7 @@ use ratatui::{
     Frame,
     layout::{Constraint, Flex, Layout, Rect, Spacing},
     style::Style,
-    widgets::{Block, Paragraph, Widget},
+    widgets::{Block, Paragraph},
 };
 
 use crate::{
@@ -64,7 +64,6 @@ impl UI {
 
         let main_area = Rect::new(4, 10, frame.area().width - 10, frame.area().height - 10);
 
-        // frame.render_widget(Block::bordered(), main_area);
         let [beszel_area, _] = main_area.layout(&Layout::horizontal([
             Constraint::Percentage(60),
             Constraint::Percentage(40),
