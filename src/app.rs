@@ -1,5 +1,3 @@
-use std::time::Duration;
-
 use color_eyre::eyre::Result;
 use ratatui::{
     DefaultTerminal,
@@ -7,15 +5,18 @@ use ratatui::{
 };
 
 use crate::{
-    event::{AppEvent, Event, EventHandler},
-    integrations::{beszel::BeszelHandler, ntfy::NtfyHandler},
-    ui::{self, Message, UI},
+    event::{AppEvent, BeszelEvent, Event, EventHandler, HandleEvent, NtfyEvent},
+    integrations::{
+        beszel::BeszelHandler,
+        ntfy::NtfyHandler,
+    },
+    ui::{self, UI},
     utils::InsideRect,
 };
 
 pub struct App {
     exit: bool,
-    event_handler: EventHandler,
+    pub event_handler: EventHandler,
     pub beszel_handler: Option<BeszelHandler>,
     pub ntfy_handler: Option<NtfyHandler>,
     pub ui: UI,
@@ -33,10 +34,11 @@ impl App {
     }
 
     pub async fn run(mut self, mut term: DefaultTerminal) -> Result<()> {
-        self.event_handler.send(AppEvent::BeszelInitialize).await?;
+        self.event_handler
+            .send(AppEvent::Beszel(BeszelEvent::Initialize))?;
+        self.event_handler
+            .send(AppEvent::Ntfy(NtfyEvent::Initialize))?;
 
-        let ntfy_handler = NtfyHandler::new(self.event_handler.sender.clone()).await;
-        // self.ntfy_handler = Some(ntfy_handler);
 
         while !self.exit {
             term.draw(|frame| ui::UI::render(&mut self, frame))?;
@@ -94,33 +96,14 @@ impl App {
             Event::Crossterm(ke) => {
                 self.handle_crossterm(ke)?;
             }
-            Event::App(AppEvent::BeszelUpdate) => {
-                if let Some(bh) = &mut self.beszel_handler {
-                    bh.update().await;
-                } else {
-                    self.event_handler.send(AppEvent::BeszelInitialize).await?;
-                }
-            }
-            Event::App(AppEvent::BeszelInitialize) => {
-                let beszel_handler = BeszelHandler::new().await;
-                if !beszel_handler.is_err() {
-                    self.beszel_handler = Some(beszel_handler.unwrap());
-                    self.event_handler.send(AppEvent::BeszelUpdate).await?;
-                }
-            }
-            Event::App(AppEvent::BeszelChangeLoadAverageHost) => {
-                self.ui.las_state.borrow_mut().next_host();
-            }
-            Event::App(AppEvent::NtfyMsg(msg)) => {
-                if msg.message.is_some() {
-                    self.ui.message = Some(Message {
-                        title: msg.title.unwrap_or("".to_string()),
-                        content: msg.message.unwrap()
-                    });
-                }
-            }
             Event::App(AppEvent::ClearMsg) => {
                 self.ui.message = None;
+            }
+            Event::App(AppEvent::Beszel(event)) => {
+                BeszelHandler::handle_event(self, event).await?;
+            }
+            Event::App(AppEvent::Ntfy(event)) => {
+                NtfyHandler::handle_event(self, event).await?;
             }
             _ => {}
         };

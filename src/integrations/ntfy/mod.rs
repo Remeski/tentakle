@@ -1,14 +1,17 @@
 use futures::StreamExt;
 use serde::Deserialize;
 use tokio::{select, sync::mpsc::UnboundedSender};
-use tokio_tungstenite::{WebSocketStream, connect_async};
+use tokio_tungstenite::connect_async;
 
 use crate::{
-    event::{AppEvent, Event, EventHandler},
     trace_dbg,
+    ui::Message,
 };
+use crate::event::{AppEvent, Event, HandleEvent, NtfyEvent};
 
-pub struct NtfyHandler {}
+pub struct NtfyHandler {
+    sender: UnboundedSender<Event>
+}
 
 #[allow(dead_code)]
 #[derive(Deserialize, Debug)]
@@ -25,30 +28,59 @@ pub struct NtfyMessage {
 }
 
 impl NtfyHandler {
-    pub async fn new(event_sender: UnboundedSender<Event>) -> Self {
+    pub fn new(sender: UnboundedSender<Event>) -> Self {
+        Self {
+            sender
+        }
+    }
+
+    pub async fn init(&self) {
         let (ws_stream, _) = connect_async("wss://ntfy.etremes.net/tentakle/ws")
             .await
             .expect("failed to connect ntfy");
         let (_, mut read) = ws_stream.split();
 
+        let sender = self.sender.clone();
         tokio::spawn(async move {
             loop {
                 select! {
-                    _ = event_sender.closed() => {
-                        break
-                    }
                     socket = read.next() => {
                         let data = socket.unwrap().unwrap();
                         let msg = String::from(data.to_text().expect("not text"));
                         trace_dbg!(&msg);
                         let ntfy = serde_json::from_str::<NtfyMessage>(&msg);
                         if let Ok(ntfy) = ntfy {
-                            event_sender.send(Event::App(AppEvent::NtfyMsg(ntfy))).unwrap();
+                            sender.send(Event::App(AppEvent::Ntfy(NtfyEvent::Msg(ntfy)))).unwrap_or_else(|err| { tracing::error!(err = ?err, "unable to send NtfyMessage")});
                         }
                     }
                 }
             }
         });
-        Self {}
+    }
+}
+
+impl HandleEvent for NtfyHandler {
+    type Event = NtfyEvent;
+    async fn handle_event(
+        app: &mut crate::app::App,
+        event: Self::Event,
+    ) -> color_eyre::eyre::Result<()> {
+        match event {
+            NtfyEvent::Initialize => {
+                let handler = NtfyHandler::new(app.event_handler.sender.clone());
+                handler.init().await;
+                app.ntfy_handler = Some(handler);
+            }
+            NtfyEvent::Msg(msg) => {
+                if msg.message.is_some() {
+                    app.ui.message = Some(Message {
+                        title: msg.title.unwrap_or("".to_string()),
+                        content: msg.message.unwrap(),
+                    });
+                }
+            }
+            _ => {}
+        }
+        Ok(())
     }
 }

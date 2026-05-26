@@ -1,11 +1,16 @@
-use std::collections::{HashMap, HashSet};
+use std::{
+    collections::{HashMap, HashSet},
+    time::Duration,
+};
 
 use chrono::Utc;
 use color_eyre::Result;
 use reqwest::Url;
+use tracing::{error, info};
 
 use crate::{
     config::{self, read_config},
+    event::{AppEvent, BeszelEvent, Event, HandleEvent},
     graphical::{self},
     integrations::beszel::{
         api::Client,
@@ -73,12 +78,18 @@ impl BeszelHandler {
     }
 
     pub async fn update(&mut self) {
+        info!("updating Beszel information");
+
         let systems = self.client.systems().await;
 
         if let Ok(systems) = systems {
             self.systems = Some(systems.clone());
 
-            let order = if let Some(order) = read_config().expect("config parse error").beszel.load_averages_order {
+            let order = if let Some(order) = read_config()
+                .expect("config parse error")
+                .beszel
+                .load_averages_order
+            {
                 order
             } else {
                 self.systems_to_order(systems)
@@ -187,5 +198,57 @@ impl BeszelHandler {
         } else {
             None
         }
+    }
+}
+
+impl HandleEvent for BeszelHandler {
+    type Event = BeszelEvent;
+    async fn handle_event(app: &mut crate::app::App, event: Self::Event) -> Result<()> {
+        match event {
+            BeszelEvent::Update => {
+                if let Some(bh) = &mut app.beszel_handler {
+                    bh.update().await;
+                }
+            }
+            BeszelEvent::Initialize => {
+                let beszel_handler = BeszelHandler::new().await;
+                if !beszel_handler.is_err() {
+                    app.beszel_handler = Some(beszel_handler.unwrap());
+                    app.event_handler
+                        .send(AppEvent::Beszel(BeszelEvent::Update))?;
+
+                    let sender = app.event_handler.sender.clone();
+                    let poll_time = Duration::from_secs(
+                        config::read_config()?.beszel.poll_interval.unwrap_or(15) as u64,
+                    );
+
+                    let task = async move {
+                        let mut beszel_ticker = tokio::time::interval(poll_time);
+                        let mut lasstate_ticker = tokio::time::interval(Duration::from_secs(30));
+                        loop {
+                            tokio::select! {
+                                _ = sender.closed() => {
+                                    break;
+                                }
+                                _ = beszel_ticker.tick() => {
+                                    sender.send(Event::App(AppEvent::Beszel(BeszelEvent::Update))).unwrap_or_else(|err| {tracing::error!(error = ?err, "couldn't send AppEvent")});
+                                }
+                                _ = lasstate_ticker.tick() => {
+                                    sender.send(Event::App(AppEvent::Beszel(BeszelEvent::ChangeLoadAverageHost))).unwrap_or_else(|err| {tracing::error!(error = ?err, "couldn't send AppEvent")});
+                                }
+                            }
+                        }
+                    };
+
+                    tokio::spawn(task);
+                } else {
+                    error!(error = ?beszel_handler, "Unable to initialize BeszelHandler")
+                }
+            }
+            BeszelEvent::ChangeLoadAverageHost => {
+                app.ui.las_state.borrow_mut().next_host();
+            }
+        }
+        Ok(())
     }
 }

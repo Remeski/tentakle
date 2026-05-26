@@ -5,7 +5,7 @@ use crossterm::event::{Event as CrosstermEvent, EventStream};
 use futures::{FutureExt, StreamExt};
 use tokio::sync::mpsc::{self, UnboundedSender};
 
-use crate::{config, integrations::ntfy::NtfyMessage};
+use crate::{app::App, config, integrations::ntfy::NtfyMessage};
 
 const TICK_PER_SECOND: usize = 24;
 
@@ -21,12 +21,24 @@ pub enum Event {
 }
 
 pub enum AppEvent {
-    BeszelUpdate,
-    BeszelInitialize,
-    BeszelChangeLoadAverageHost,
-    NtfyMsg(NtfyMessage),
+    Beszel(BeszelEvent),
+    Ntfy(NtfyEvent),
     ClearMsg
 }
+
+pub enum BeszelEvent {
+    Initialize,
+    Update,
+    ChangeLoadAverageHost
+}
+
+pub enum NtfyEvent {
+    Initialize,
+    Update,
+    Msg(NtfyMessage),
+}
+
+
 
 impl EventHandler {
     pub fn new() -> Self {
@@ -40,7 +52,7 @@ impl EventHandler {
         self.receiver.recv().await.ok_or_eyre("Bad")
     }
 
-    pub async fn send(&self, event: AppEvent) -> Result<()> {
+    pub fn send(&self, event: AppEvent) -> Result<()> {
         self.sender.send(Event::App(event))?;
         return Ok(());
     }
@@ -58,8 +70,8 @@ impl EventTask {
     async fn run(self) -> Result<()> {
         let mut term_reader = EventStream::new();
         let mut ticker = tokio::time::interval(Duration::from_secs_f32(1.0 / TICK_PER_SECOND as f32));
-        let mut beszel_ticker = tokio::time::interval(Duration::from_secs(config::read_config()?.beszel.poll_interval.unwrap_or(15) as u64));
-        let mut lasstate_ticker = tokio::time::interval(Duration::from_secs(30));
+        // let mut beszel_ticker = tokio::time::interval(Duration::from_secs(config::read_config()?.beszel.poll_interval.unwrap_or(15) as u64));
+        // let mut lasstate_ticker = tokio::time::interval(Duration::from_secs(30));
         loop {
             tokio::select! {
                 _ = self.sender.closed() => {
@@ -68,12 +80,12 @@ impl EventTask {
                 _ = ticker.tick() => {
                     self.sender.send(Event::Tick)?
                 }
-                _ = beszel_ticker.tick() => {
-                    self.sender.send(Event::App(AppEvent::BeszelUpdate))?
-                }
-                _ = lasstate_ticker.tick() => {
-                    self.sender.send(Event::App(AppEvent::BeszelChangeLoadAverageHost))?
-                }
+                // _ = beszel_ticker.tick() => {
+                //     self.sender.send(Event::App(AppEvent::Beszel(BeszelEvent::Update)))?
+                // }
+                // _ = lasstate_ticker.tick() => {
+                //     self.sender.send(Event::App(AppEvent::Beszel(BeszelEvent::ChangeLoadAverageHost)))?
+                // }
                 Some(Ok(e)) = term_reader.next().fuse() => {
                     self.sender.send(Event::Crossterm(e))?
                 }
@@ -82,4 +94,9 @@ impl EventTask {
         }
         Ok(())
     }
+}
+
+pub trait HandleEvent {
+    type Event;
+    async fn handle_event(app: &mut App, event: Self::Event) -> Result<()>;
 }
