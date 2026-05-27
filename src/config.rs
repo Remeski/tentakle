@@ -1,6 +1,6 @@
 use std::fs;
 
-use clap::{Parser};
+use clap::Parser;
 
 use color_eyre::eyre::Result;
 use serde::Deserialize;
@@ -8,7 +8,7 @@ use serde::Deserialize;
 #[derive(Deserialize)]
 pub struct Config {
     pub beszel: Beszel,
-    // pub uptimekuma: Uptimekuma
+    pub pihole: Pihole, 
 }
 
 #[derive(Deserialize)]
@@ -17,7 +17,14 @@ pub struct Beszel {
     pub identity: String,
     pub password: String,
     pub poll_interval: Option<usize>,
-    pub load_averages_order: Option<Vec<String>>
+    pub load_averages_order: Option<Vec<String>>,
+}
+
+#[derive(Deserialize)]
+pub struct Pihole {
+    pub url: String,
+    pub password: String,
+    pub poll_interval: Option<usize>,
 }
 
 // #[derive(Deserialize)]
@@ -38,6 +45,9 @@ pub fn read_config() -> Result<Config> {
 
     let config = args.config;
 
-    let config: Config = toml::from_str(&fs::read_to_string(config.clone()).expect(&format!("couldn't find config file at {}", config)))?;
+    let config: Config = toml::from_str(
+        &fs::read_to_string(config.clone())
+            .expect(&format!("couldn't find config file at {}", config)),
+    ).expect("unable to read config");
     Ok(config)
 }

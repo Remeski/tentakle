@@ -3,14 +3,11 @@ use serde::Deserialize;
 use tokio::{select, sync::mpsc::UnboundedSender};
 use tokio_tungstenite::connect_async;
 
-use crate::{
-    trace_dbg,
-    ui::Message,
-};
 use crate::event::{AppEvent, Event, HandleEvent, NtfyEvent};
+use crate::{trace_dbg, ui::Message};
 
 pub struct NtfyHandler {
-    sender: UnboundedSender<Event>
+    sender: UnboundedSender<Event>,
 }
 
 #[allow(dead_code)]
@@ -29,33 +26,36 @@ pub struct NtfyMessage {
 
 impl NtfyHandler {
     pub fn new(sender: UnboundedSender<Event>) -> Self {
-        Self {
-            sender
-        }
+        Self { sender }
     }
 
     pub async fn init(&self) {
-        let (ws_stream, _) = connect_async("wss://ntfy.etremes.net/tentakle/ws")
-            .await
-            .expect("failed to connect ntfy");
-        let (_, mut read) = ws_stream.split();
+        let connection = connect_async("wss://ntfy.etremes.net/tentakle/ws")
+            .await;
 
-        let sender = self.sender.clone();
-        tokio::spawn(async move {
-            loop {
-                select! {
-                    socket = read.next() => {
-                        let data = socket.unwrap().unwrap();
-                        let msg = String::from(data.to_text().expect("not text"));
-                        trace_dbg!(&msg);
-                        let ntfy = serde_json::from_str::<NtfyMessage>(&msg);
-                        if let Ok(ntfy) = ntfy {
-                            sender.send(Event::App(AppEvent::Ntfy(NtfyEvent::Msg(ntfy)))).unwrap_or_else(|err| { tracing::error!(err = ?err, "unable to send NtfyMessage")});
+        if let Ok(connection) = connection {
+            let (ws_stream, _) = connection;
+            let (_, mut read) = ws_stream.split();
+
+            let sender = self.sender.clone();
+            tokio::spawn(async move {
+                loop {
+                    select! {
+                        socket = read.next() => {
+                            let data = socket.unwrap().unwrap();
+                            let msg = String::from(data.to_text().expect("not text"));
+                            trace_dbg!(&msg);
+                            let ntfy = serde_json::from_str::<NtfyMessage>(&msg);
+                            if let Ok(ntfy) = ntfy {
+                                sender.send(Event::App(AppEvent::Ntfy(NtfyEvent::Msg(ntfy)))).unwrap_or_else(|err| { tracing::error!(err = ?err, "unable to send NtfyMessage")});
+                            }
                         }
                     }
                 }
-            }
-        });
+            });
+        } else {
+            tracing::error!(err = ?connection.unwrap_err(), "unable to connect to ntfy");
+        }
     }
 }
 

@@ -78,7 +78,7 @@ impl BeszelHandler {
     }
 
     pub async fn update(&mut self) {
-        info!("updating Beszel information");
+        tracing::trace!("updating Beszel information");
 
         let systems = self.client.systems().await;
 

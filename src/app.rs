@@ -1,3 +1,4 @@
+use asciigraphix_core::shapes::Point;
 use color_eyre::eyre::Result;
 use ratatui::{
     DefaultTerminal,
@@ -5,11 +6,8 @@ use ratatui::{
 };
 
 use crate::{
-    event::{AppEvent, BeszelEvent, Event, EventHandler, HandleEvent, NtfyEvent},
-    integrations::{
-        beszel::BeszelHandler,
-        ntfy::NtfyHandler,
-    },
+    event::{AppEvent, BeszelEvent, Event, EventHandler, HandleEvent, NtfyEvent, PiholeEvent},
+    integrations::{beszel::BeszelHandler, ntfy::NtfyHandler, pihole::PiholeHandler},
     ui::{self, UI},
     utils::InsideRect,
 };
@@ -19,6 +17,7 @@ pub struct App {
     pub event_handler: EventHandler,
     pub beszel_handler: Option<BeszelHandler>,
     pub ntfy_handler: Option<NtfyHandler>,
+    pub pihole_handler: Option<PiholeHandler>,
     pub ui: UI,
 }
 
@@ -29,6 +28,7 @@ impl App {
             event_handler: EventHandler::new(),
             beszel_handler: None,
             ntfy_handler: None,
+            pihole_handler: None,
             ui: UI::default(),
         }
     }
@@ -38,7 +38,8 @@ impl App {
             .send(AppEvent::Beszel(BeszelEvent::Initialize))?;
         self.event_handler
             .send(AppEvent::Ntfy(NtfyEvent::Initialize))?;
-
+        self.event_handler
+            .send(AppEvent::Pihole(PiholeEvent::Initialize))?;
 
         while !self.exit {
             term.draw(|frame| ui::UI::render(&mut self, frame))?;
@@ -52,6 +53,8 @@ impl App {
         match ce {
             CrosstermEvent::Key(ke) => match ke.code {
                 KeyCode::Char('q') => {
+                    self.event_handler
+                        .send(AppEvent::Pihole(PiholeEvent::Logout))?;
                     self.exit = true;
                 }
                 _ => {}
@@ -89,6 +92,9 @@ impl App {
                 self.ui.las_state.borrow_mut().next_host();
             }
         }
+        if self.ui.pihole_area.inside(c as usize, r as usize) {
+            self.ui.pihole_state.borrow_mut().click(&self);
+        }
     }
 
     async fn handle_events(&mut self) -> Result<()> {
@@ -104,6 +110,16 @@ impl App {
             }
             Event::App(AppEvent::Ntfy(event)) => {
                 NtfyHandler::handle_event(self, event).await?;
+            }
+            Event::App(AppEvent::Pihole(event)) => {
+                PiholeHandler::handle_event(self, event).await?;
+            }
+            Event::Tick => {
+                self.ui
+                    .tubu_state
+                    .borrow_mut()
+                    .shape
+                    .rotate(&Point(0.0, 0.0, 0.0), (0.0, 0.02, 0.1));
             }
             _ => {}
         };

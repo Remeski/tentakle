@@ -1,18 +1,16 @@
 FROM rust:1.95 as builder
 
-WORKDIR /app
+WORKDIR /app/tentakle
 
-COPY src/ ./src/
-COPY Cargo.lock .
-COPY Cargo.toml .
+COPY ./asciigraphix /app/asciigraphix
+COPY ./tentakle .
 
 RUN cargo install --path .
 
-# FROM alpine
+FROM rust:1.95
 
-# COPY --from=builder /usr/local/cargo/bin/tentakle /tentakle
-#
+COPY --from=builder /usr/local/cargo/bin/tentakle /tentakle
 
-COPY tentakle.toml .
+COPY ./tentakle/tentakle.toml .
 
 CMD ["tentakle"]
