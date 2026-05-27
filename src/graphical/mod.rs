@@ -12,6 +12,8 @@ mod logo;
 pub mod beszel;
 pub mod colors;
 pub mod graph;
+pub mod pihole;
+pub mod tubu;
 
 use ratatui::layout::Margin;
 

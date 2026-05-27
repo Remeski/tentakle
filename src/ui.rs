@@ -13,12 +13,14 @@ use crate::{
         Logo, Popup,
         beszel::{ContainersState, LASState, SystemsState},
         colors,
+        pihole::{self, PiholeStatus, PiholeStatusState},
+        tubu::{Tubu, TubuState},
     },
 };
 
 pub struct Message {
     pub title: String,
-    pub content: String
+    pub content: String,
 }
 
 pub struct UI {
@@ -26,9 +28,12 @@ pub struct UI {
     pub systems_area: Rect,
     pub containers_area: Rect,
     pub las_area: Rect,
+    pub pihole_area: Rect,
     pub systems_state: RefCell<SystemsState>,
     pub containers_state: RefCell<ContainersState>,
     pub las_state: RefCell<LASState>,
+    pub pihole_state: RefCell<PiholeStatusState>,
+    pub tubu_state: RefCell<TubuState>,
     beszel_layout: [Constraint; 3],
     focus: usize,
 }
@@ -40,9 +45,12 @@ impl Default for UI {
             systems_area: Rect::default(),
             containers_area: Rect::default(),
             las_area: Rect::default(),
+            pihole_area: Rect::default(),
             systems_state: RefCell::default(),
             containers_state: RefCell::default(),
             las_state: RefCell::default(),
+            pihole_state: RefCell::default(),
+            tubu_state: RefCell::default(),
             beszel_layout: [
                 Constraint::Length(4),
                 Constraint::Fill(3),
@@ -64,10 +72,30 @@ impl UI {
 
         let main_area = Rect::new(4, 10, frame.area().width - 10, frame.area().height - 10);
 
-        let [beszel_area, _] = main_area.layout(&Layout::horizontal([
+        let [beszel_area, left] = main_area.layout(&Layout::horizontal([
             Constraint::Percentage(60),
             Constraint::Percentage(40),
         ]));
+
+        let [other, pihole_area] = left.layout(&Layout::vertical([
+            Constraint::Fill(3),
+            Constraint::Fill(1),
+        ]));
+
+        let tubu = Tubu::new();
+        frame.render_stateful_widget(tubu, other, &mut app.ui.tubu_state.borrow_mut());
+
+        if let Some(pihole) = &app.pihole_handler {
+            if let Some(blocking) = pihole.blocking {
+                let status = PiholeStatus::new(blocking);
+                frame.render_stateful_widget(
+                    status,
+                    pihole_area,
+                    &mut app.ui.pihole_state.borrow_mut(),
+                );
+            }
+            app.ui.pihole_area = pihole_area.clone();
+        }
 
         if let Some(beszel) = &app.beszel_handler {
             let [systems_area, containers_area, graph_area] = beszel_area.layout(
@@ -130,7 +158,9 @@ impl UI {
                 width: area.width / 2,
                 height: area.height / 3,
             };
-            let popup = Popup::default().content(message.content.clone()).title(message.title.clone());
+            let popup = Popup::default()
+                .content(message.content.clone())
+                .title(message.title.clone());
             frame.render_widget(popup, popup_area);
         }
     }

@@ -1,9 +1,10 @@
 [package]
 name = "tentakle"
-version = "0.1.0"
+version = "0.0.1"
 edition = "2024"
 
 [dependencies]
+asciigraphix-core = { version = "0.1.0", path = "../asciigraphix/asciigraphix-core" }
 chrono = { version = "0.4.44", features = ["serde"] }
 clap = { version = "4.6.1", features = ["derive"] }
 color-eyre = "0.6.5"

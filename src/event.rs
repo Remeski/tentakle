@@ -23,6 +23,7 @@ pub enum Event {
 pub enum AppEvent {
     Beszel(BeszelEvent),
     Ntfy(NtfyEvent),
+    Pihole(PiholeEvent),
     ClearMsg
 }
 
@@ -38,6 +39,13 @@ pub enum NtfyEvent {
     Msg(NtfyMessage),
 }
 
+pub enum PiholeEvent {
+    Initialize,
+    Update,
+    BlockingOn,
+    BlockingOff,
+    Logout
+}
 
 impl EventHandler {
     pub fn new() -> Self {
