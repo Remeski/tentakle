@@ -7,10 +7,10 @@ COPY ./tentakle .
 
 RUN cargo install --path .
 
-FROM rust:1.95
+# FROM rust:1.95
 
-COPY --from=builder /usr/local/cargo/bin/tentakle /tentakle
-
-COPY ./tentakle/tentakle.toml .
+# COPY --from=builder /usr/local/cargo/bin/tentakle /tentakle
+#
+# COPY ./tentakle/tentakle.toml .
 
 CMD ["tentakle"]
