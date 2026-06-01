@@ -50,7 +50,7 @@ pub struct LoadAverage {
 
 impl BeszelHandler {
     pub async fn new() -> Result<Self> {
-        let config = config::read_config()?;
+        let config = config::read_config();
         let mut client = Client::new(Url::parse(&config.beszel.url)?);
         client
             .connect_auth_password(config.beszel.identity, config.beszel.password)
@@ -86,7 +86,6 @@ impl BeszelHandler {
             self.systems = Some(systems.clone());
 
             let order = if let Some(order) = read_config()
-                .expect("config parse error")
                 .beszel
                 .load_averages_order
             {
@@ -221,7 +220,7 @@ impl HandleEvent for BeszelHandler {
 
                     let sender = app.event_handler.sender.clone();
                     let poll_time = Duration::from_secs(
-                        config::read_config()?.beszel.poll_interval.unwrap_or(15) as u64,
+                        config::read_config().beszel.poll_interval.unwrap_or(15) as u64,
                     );
 
                     let task = async move {

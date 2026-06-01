@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 
 use crate::{
-    config::{self, Pihole, read_config},
+    config::{self, read_config},
     event::{AppEvent, Event, HandleEvent, PiholeEvent},
 };
 
@@ -60,7 +60,6 @@ impl PiholeHandler {
 
     pub async fn initialize(&mut self) -> Result<()> {
         let password = read_config()
-            .expect("unable to read config")
             .pihole
             .password;
         self.authenticate(password).await?;
@@ -124,7 +123,7 @@ impl HandleEvent for PiholeHandler {
     async fn handle_event(app: &mut crate::app::App, event: Self::Event) -> Result<()> {
         match event {
             PiholeEvent::Initialize => {
-                let url = read_config().expect("unable to read config").pihole.url;
+                let url = read_config().pihole.url;
                 let mut handler = Self::new(Url::from_str(&url).expect("bad url: pihole"));
                 let res = handler.initialize().await;
                 if res.is_err() {
@@ -141,7 +140,7 @@ impl HandleEvent for PiholeHandler {
 
                 let sender = app.event_handler.sender.clone();
                 let poll_time = Duration::from_secs(
-                    config::read_config()?.pihole.poll_interval.unwrap_or(15) as u64,
+                    config::read_config().pihole.poll_interval.unwrap_or(15) as u64,
                 );
 
                 let task = async move {

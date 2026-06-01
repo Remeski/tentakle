@@ -1,0 +1,13 @@
+[beszel]
+url = ""
+identity = ""
+password = ""
+poll_interval = 15 # this is in second
+load_averages_order = []
+
+[ntfy]
+url = ""
+
+[pihole]
+url = ""
+password = ""

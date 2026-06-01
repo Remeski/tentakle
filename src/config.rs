@@ -9,6 +9,7 @@ use serde::Deserialize;
 pub struct Config {
     pub beszel: Beszel,
     pub pihole: Pihole, 
+    pub ntfy: Ntfy
 }
 
 #[derive(Deserialize)]
@@ -27,6 +28,11 @@ pub struct Pihole {
     pub poll_interval: Option<usize>,
 }
 
+#[derive(Deserialize)]
+pub struct Ntfy {
+    pub url: String
+}
+
 // #[derive(Deserialize)]
 // pub struct Uptimekuma {
 //     pub url: String,
@@ -40,7 +46,7 @@ pub struct Args {
     config: String,
 }
 
-pub fn read_config() -> Result<Config> {
+pub fn read_config() -> Config {
     let args = Args::parse();
 
     let config = args.config;
@@ -49,5 +55,5 @@ pub fn read_config() -> Result<Config> {
         &fs::read_to_string(config.clone())
             .expect(&format!("couldn't find config file at {}", config)),
     ).expect("unable to read config");
-    Ok(config)
+    config
 }
