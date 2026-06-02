@@ -1,13 +1,13 @@
 [beszel]
-url = ""
-identity = ""
-password = ""
-poll_interval = 15 # this is in second
-load_averages_order = []
+url = "https://beszel.my.net"
+identity = "admin@my.net"
+password = "admin_password"
+poll_interval = 15 # this is in seconds
+load_averages_order = ["HOST1"]
 
 [ntfy]
-url = ""
+url = "https://ntfy.my.net" # currently authentication is not supported
 
 [pihole]
-url = ""
-password = ""
+url = "https://pihole.my.net"
+password = "pihole_password"
