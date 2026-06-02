@@ -13,7 +13,7 @@ use crate::{
         Logo, Popup,
         beszel::{ContainersState, LASState, SystemsState},
         colors,
-        pihole::{self, PiholeStatus, PiholeStatusState},
+        pihole::{PiholeStatus, PiholeStatusState},
         tubu::{Tubu, TubuState},
     },
 };

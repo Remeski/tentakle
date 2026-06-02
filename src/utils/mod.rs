@@ -1,11 +1,13 @@
 use ratatui::layout::{Constraint, Layout, Rect};
 
+#[allow(dead_code)]
 pub struct Grid {
     pub cols: usize,
     pub rows: usize,
     pub layout: Vec<Vec<Rect>>,
 }
 
+#[allow(dead_code)]
 impl Grid {
     pub fn new(
         area: Rect,
@@ -90,10 +92,6 @@ mod tests {
             vec![Constraint::Length(1), Constraint::Length(1)],
             vec![Constraint::Length(1), Constraint::Length(1)],
         );
-
-        // for a in grid.layout {
-        //     dbg!(a);
-        // }
 
         for a in grid.cols() {
             dbg!(a);

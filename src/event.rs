@@ -20,6 +20,7 @@ pub enum Event {
     Crossterm(CrosstermEvent),
 }
 
+#[allow(dead_code)]
 pub enum AppEvent {
     Beszel(BeszelEvent),
     Ntfy(NtfyEvent),
@@ -33,6 +34,7 @@ pub enum BeszelEvent {
     ChangeLoadAverageHost
 }
 
+#[allow(dead_code)]
 pub enum NtfyEvent {
     Initialize,
     Update,

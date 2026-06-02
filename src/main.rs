@@ -4,7 +4,6 @@ use color_eyre::eyre::Result;
 use crossterm::ExecutableCommand;
 
 use clap::Parser;
-use tracing::info;
 
 use crate::app::App;
 

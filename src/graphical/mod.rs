@@ -11,7 +11,6 @@ mod logo;
 
 pub mod beszel;
 pub mod colors;
-pub mod graph;
 pub mod pihole;
 pub mod tubu;
 
@@ -54,6 +53,7 @@ impl<'a> Widget for PagedBlock<'a> {
     }
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Default, Setters)]
 pub struct Popup<'a> {
     #[setters(into)]

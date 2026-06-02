@@ -49,6 +49,7 @@ impl Client {
         return Ok(js);
     }
 
+    #[allow(dead_code)]
     pub async fn containers(&self, system_name: &str) -> Result<List<Container>> {
         let rb = self
             .http_handler

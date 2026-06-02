@@ -121,7 +121,6 @@ impl App {
                     .shape
                     .rotate(&Point(0.0, 0.0, 0.0), (0.0, 0.02, 0.1));
             }
-            _ => {}
         };
         return Ok(());
     }

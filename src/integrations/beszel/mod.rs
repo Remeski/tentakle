@@ -6,7 +6,7 @@ use std::{
 use chrono::Utc;
 use color_eyre::Result;
 use reqwest::Url;
-use tracing::{error, info};
+use tracing::error;
 
 use crate::{
     config::{self, read_config},
@@ -85,10 +85,7 @@ impl BeszelHandler {
         if let Ok(systems) = systems {
             self.systems = Some(systems.clone());
 
-            let order = if let Some(order) = read_config()
-                .beszel
-                .load_averages_order
-            {
+            let order = if let Some(order) = read_config().beszel.load_averages_order {
                 order
             } else {
                 self.systems_to_order(systems)
