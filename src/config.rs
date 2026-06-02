@@ -2,7 +2,6 @@ use std::fs;
 
 use clap::Parser;
 
-use color_eyre::eyre::Result;
 use serde::Deserialize;
 
 #[derive(Deserialize)]

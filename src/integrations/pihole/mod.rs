@@ -1,7 +1,6 @@
 use std::{str::FromStr, time::Duration};
 
 use color_eyre::eyre::Result;
-use futures::TryFutureExt;
 use reqwest::{Url, header::CONTENT_TYPE};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
@@ -187,13 +186,3 @@ impl HandleEvent for PiholeHandler {
         Ok(())
     }
 }
-
-// #[cfg(test)]
-// mod tests {
-// use crate::integrations::pihole::PiholeHandler;
-
-// #[tokio::test]
-// async fn test_authentication() -> Result<()> {
-//     let handler = PiholeHandler::new("https://pihole.etremes.net");
-// }
-// }
