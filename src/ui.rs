@@ -170,7 +170,7 @@ impl UI {
         self.beszel_layout[2] = Constraint::Fill(2);
         let changed = self.focus != 1;
         self.focus = 1;
-        return changed;
+        changed
     }
 
     pub fn focus_las(&mut self) -> bool {
@@ -178,6 +178,6 @@ impl UI {
         self.beszel_layout[2] = Constraint::Fill(3);
         let changed = self.focus != 2;
         self.focus = 2;
-        return changed;
+        changed
     }
 }

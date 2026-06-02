@@ -46,7 +46,7 @@ impl App {
             self.handle_events().await?;
         }
 
-        return Ok(());
+        Ok(())
     }
 
     fn handle_crossterm(&mut self, ce: CrosstermEvent) -> Result<()> {
@@ -70,7 +70,7 @@ impl App {
             }
             _ => {}
         }
-        return Ok(());
+        Ok(())
     }
 
     fn handle_click(&mut self, c: u16, r: u16) {
@@ -122,6 +122,6 @@ impl App {
                     .rotate(&Point(0.0, 0.0, 0.0), (0.0, 0.02, 0.1));
             }
         };
-        return Ok(());
+        Ok(())
     }
 }

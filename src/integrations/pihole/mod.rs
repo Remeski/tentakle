@@ -63,7 +63,7 @@ impl PiholeHandler {
             .password;
         self.authenticate(password).await?;
         tracing::info!(sid = ?self.sid, "logged in and got sid");
-        return Ok(());
+        Ok(())
     }
 
     async fn authenticate(&mut self, password: String) -> Result<()> {
@@ -78,7 +78,7 @@ impl PiholeHandler {
         let resp: AuthResponse = client.send().await?.json().await?;
         self.sid = Some(resp.session.sid);
 
-        return Ok(());
+        Ok(())
     }
 
     pub async fn is_blocking(&self) -> Result<Option<bool>> {

@@ -10,9 +10,9 @@ pub struct Client {
 
 impl Client {
     pub fn new(base_url: Url) -> Self {
-        return Self {
+        Self {
             http_handler: HTTPHandler::new(base_url, None),
-        };
+        }
     }
 
     pub async fn connect_auth_password(
@@ -46,7 +46,7 @@ impl Client {
             ]);
         let js = rb.send().await?.json::<List<SystemStats>>().await?;
 
-        return Ok(js);
+        Ok(js)
     }
 
     pub async fn containers(&self, system_name: &str) -> Result<List<Container>> {
@@ -109,9 +109,9 @@ impl HTTPHandler {
         let client = reqwest::Client::new().get(self.base_url.join(path)?);
         if let Some(token) = &self.token {
             let rb = client.header(AUTHORIZATION, token.as_str());
-            return Ok(rb);
+            Ok(rb)
         } else {
-            return Err(eyre!("unauthorized! token missing"));
+            Err(eyre!("unauthorized! token missing"))
         }
     }
 
@@ -119,9 +119,9 @@ impl HTTPHandler {
         let client = reqwest::Client::new().post(self.base_url.join(path)?);
         if let Some(token) = &self.token {
             let rb = client.header(AUTHORIZATION, token.as_str());
-            return Ok(rb);
+            Ok(rb)
         } else {
-            return Err(eyre!("unauthorized! token missing"));
+            Err(eyre!("unauthorized! token missing"))
         }
     }
 }

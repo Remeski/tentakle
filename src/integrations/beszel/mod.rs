@@ -156,7 +156,7 @@ impl BeszelHandler {
                 .collect();
             hm.insert(name.to_string(), las);
         }
-        return Ok(hm);
+        Ok(hm)
     }
 
     fn systems_to_order(&self, systems: List<System>) -> Vec<String> {
@@ -168,7 +168,7 @@ impl BeszelHandler {
                 hs.insert(system.name.clone());
             }
         }
-        return order;
+        order
     }
 
     pub fn load_averages_widget(&self) -> Option<graphical::beszel::LAGraph> {
@@ -210,8 +210,8 @@ impl HandleEvent for BeszelHandler {
             }
             BeszelEvent::Initialize => {
                 let beszel_handler = BeszelHandler::new().await;
-                if !beszel_handler.is_err() {
-                    app.beszel_handler = Some(beszel_handler.unwrap());
+                if let Ok(beszel_handler) = beszel_handler {
+                    app.beszel_handler = Some(beszel_handler);
                     app.event_handler
                         .send(AppEvent::Beszel(BeszelEvent::Update))?;
 

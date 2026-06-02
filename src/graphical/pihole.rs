@@ -34,10 +34,10 @@ impl PiholeStatusState {
                 };
                 app.event_handler
                     .send(AppEvent::Pihole(event))
-                    .expect("unable to send AppEvent");
+                    .unwrap_or_else(|err| tracing::error!(err = ?err, "unable to send AppEvent"));
                 app.event_handler
                     .send(AppEvent::Pihole(PiholeEvent::Update))
-                    .expect("unable to send AppEvent");
+                    .unwrap_or_else(|err| tracing::error!(err = ?err, "unable to send AppEvent"));
             }
         }
     }

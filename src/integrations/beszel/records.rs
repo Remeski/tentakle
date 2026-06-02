@@ -3,13 +3,13 @@ use serde::Deserialize;
 
 #[allow(non_snake_case, dead_code)]
 #[derive(Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct List<T> {
     pub page: isize,
     pub perPage: isize,
-    pub totalPages: isize,
-    pub totalItems: isize,
-    pub items: Vec<T>
-
+    pub total_pages: isize,
+    pub total_items: isize,
+    pub items: Vec<T>,
 }
 
 #[allow(non_snake_case, dead_code)]
@@ -35,9 +35,10 @@ pub struct Auth {
 
 #[allow(non_snake_case, dead_code)]
 #[derive(Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct System {
-    pub collectionId: String,
-    pub collectionName: String,
+    pub collection_id: String,
+    pub collection_name: String,
     pub id: String,
     pub name: String,
     pub status: String,
@@ -47,21 +48,23 @@ pub struct System {
 
 #[allow(non_snake_case, dead_code)]
 #[derive(Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct SystemStats {
-    pub collectionId: String,
-    pub collectionName: String,
+    pub collection_id: String,
+    pub collection_name: String,
     pub id: String,
     pub system: String,
     pub created: String,
     pub updated: String,
-    pub stats: serde_json::Value
+    pub stats: serde_json::Value,
 }
 
 #[allow(non_snake_case, dead_code)]
 #[derive(Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct Container {
-    pub collectionId: String,
-    pub collectionName: String,
+    pub collection_id: String,
+    pub collection_name: String,
     pub name: String,
     pub id: String,
     pub system: String,
@@ -73,12 +76,11 @@ pub struct Container {
     pub image: String,
     pub ports: String,
     pub status: String,
-    pub health: isize
-    
+    pub health: isize,
 }
 
 #[allow(non_snake_case, dead_code)]
 #[derive(Deserialize, Debug)]
 pub struct Stats {
-    pub la: [f64; 3]
+    pub la: [f64; 3],
 }

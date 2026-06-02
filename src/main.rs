@@ -40,5 +40,5 @@ async fn main() -> Result<()> {
     ratatui::restore();
     std::io::stdout().execute(crossterm::event::DisableMouseCapture)?;
 
-    return run;
+    run
 }

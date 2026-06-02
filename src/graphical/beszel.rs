@@ -80,7 +80,6 @@ impl StatefulWidget for Systems {
         let num_systems = self.systems.len();
         let num_rows = num_systems.div_ceil(num_cols);
 
-        // let area = area.clamp(Rect::new(area.left(), area.top(), area.width, (num_rows + 2) as u16));
         let area_inner = area.inner(Margin::new(1, 1));
 
         let num_pages = (num_rows as u16).div_ceil(area_inner.height);
@@ -287,7 +286,7 @@ impl LAGraph {
             }
         });
 
-        return ([las1, las5, las15], max);
+        ([las1, las5, las15], max)
     }
 }
 
