@@ -1,17 +1,18 @@
-use std::fs;
+use std::collections::HashMap;
 
 use clap::Parser;
 
+use color_eyre::eyre::Result;
 use serde::Deserialize;
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone, Debug)]
 pub struct Config {
     pub beszel: Beszel,
-    pub pihole: Pihole, 
-    pub ntfy: Ntfy
+    pub pihole: Pihole,
+    pub ntfy: Ntfy,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone, Debug)]
 pub struct Beszel {
     pub url: String,
     pub identity: String,
@@ -20,39 +21,36 @@ pub struct Beszel {
     pub load_averages_order: Option<Vec<String>>,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone, Debug)]
 pub struct Pihole {
     pub url: String,
     pub password: String,
     pub poll_interval: Option<usize>,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone, Debug)]
 pub struct Ntfy {
-    pub url: String
+    pub url: String,
 }
 
-// #[derive(Deserialize)]
-// pub struct Uptimekuma {
-//     pub url: String,
-//     pub api_key: String
-// }
-
-#[derive(Parser, Debug)]
+#[derive(Deserialize, Parser, Debug)]
 #[command(version, about, long_about = None)]
-pub struct Args {
+pub struct Cli {
     #[arg(short, long, default_value_t = String::from("tentakle.toml"))]
-    config: String,
+    config_path: String,
 }
 
-pub fn read_config() -> Config {
-    let args = Args::parse();
+impl Config {
+    pub fn new() -> Result<Self> {
+        let config_cli = Cli::parse();
+        let config_path = config_cli.config_path;
+        let settings = config::Config::builder()
+            .add_source(config::File::with_name(&config_path).required(false))
+            .add_source(config::Environment::with_prefix("tkle").separator("_"))
+            .build()?;
 
-    let config = args.config;
+        let cfg: Config = settings.try_deserialize()?;
 
-    let config: Config = toml::from_str(
-        &fs::read_to_string(config.clone())
-            .expect(&format!("couldn't find config file at {}", config)),
-    ).expect("unable to read config");
-    config
+        Ok(cfg)
+    }
 }

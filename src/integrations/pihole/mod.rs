@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 
 use crate::{
-    config::{self, read_config},
+    config::{self, Config},
     event::{AppEvent, Event, HandleEvent, PiholeEvent},
 };
 
@@ -57,10 +57,8 @@ impl PiholeHandler {
         }
     }
 
-    pub async fn initialize(&mut self) -> Result<()> {
-        let password = read_config()
-            .pihole
-            .password;
+    pub async fn initialize(&mut self, config: &Config) -> Result<()> {
+        let password = config.pihole.password.clone();
         self.authenticate(password).await?;
         tracing::info!(sid = ?self.sid, "logged in and got sid");
         Ok(())
@@ -122,9 +120,9 @@ impl HandleEvent for PiholeHandler {
     async fn handle_event(app: &mut crate::app::App, event: Self::Event) -> Result<()> {
         match event {
             PiholeEvent::Initialize => {
-                let url = read_config().pihole.url;
+                let url = app.config.pihole.url.clone();
                 let mut handler = Self::new(Url::from_str(&url).expect("bad url: pihole"));
-                let res = handler.initialize().await;
+                let res = handler.initialize(&app.config).await;
                 if res.is_err() {
                     res.unwrap_or_else(
                         |err| tracing::error!(err = ?err, "unable to initialize pihole"),
@@ -139,7 +137,7 @@ impl HandleEvent for PiholeHandler {
 
                 let sender = app.event_handler.sender.clone();
                 let poll_time = Duration::from_secs(
-                    config::read_config().pihole.poll_interval.unwrap_or(15) as u64,
+                    app.config.pihole.poll_interval.unwrap_or(15) as u64,
                 );
 
                 let task = async move {

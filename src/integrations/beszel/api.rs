@@ -17,10 +17,10 @@ impl Client {
 
     pub async fn connect_auth_password(
         &mut self,
-        identity: String,
-        password: String,
+        identity: &str,
+        password: &str,
     ) -> Result<()> {
-        self.http_handler.authenticate(identity, password).await?;
+        self.http_handler.authenticate(String::from(identity), String::from(password)).await?;
         Ok(())
     }
 

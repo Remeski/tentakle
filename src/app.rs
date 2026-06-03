@@ -6,10 +6,7 @@ use ratatui::{
 };
 
 use crate::{
-    event::{AppEvent, BeszelEvent, Event, EventHandler, HandleEvent, NtfyEvent, PiholeEvent},
-    integrations::{beszel::BeszelHandler, ntfy::NtfyHandler, pihole::PiholeHandler},
-    ui::{self, UI},
-    utils::InsideRect,
+    config::Config, event::{AppEvent, BeszelEvent, Event, EventHandler, HandleEvent, NtfyEvent, PiholeEvent}, integrations::{beszel::BeszelHandler, ntfy::NtfyHandler, pihole::PiholeHandler}, ui::{self, UI}, utils::InsideRect
 };
 
 pub struct App {
@@ -19,10 +16,11 @@ pub struct App {
     pub ntfy_handler: Option<NtfyHandler>,
     pub pihole_handler: Option<PiholeHandler>,
     pub ui: UI,
+    pub config: Config
 }
 
 impl App {
-    pub fn new() -> Self {
+    pub fn new(config: Config) -> Self {
         Self {
             exit: false,
             event_handler: EventHandler::new(),
@@ -30,6 +28,7 @@ impl App {
             ntfy_handler: None,
             pihole_handler: None,
             ui: UI::default(),
+            config
         }
     }
 

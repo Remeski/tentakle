@@ -9,7 +9,7 @@ use reqwest::Url;
 use tracing::error;
 
 use crate::{
-    config::{self, read_config},
+    config::{self, Config},
     event::{AppEvent, BeszelEvent, Event, HandleEvent},
     graphical::{self},
     integrations::beszel::{
@@ -49,11 +49,10 @@ pub struct LoadAverage {
 }
 
 impl BeszelHandler {
-    pub async fn new() -> Result<Self> {
-        let config = config::read_config();
+    pub async fn new(config: &Config) -> Result<Self> {
         let mut client = Client::new(Url::parse(&config.beszel.url)?);
         client
-            .connect_auth_password(config.beszel.identity, config.beszel.password)
+            .connect_auth_password(&config.beszel.identity, &config.beszel.password)
             .await?;
 
         Ok(Self {
@@ -77,7 +76,7 @@ impl BeszelHandler {
         }
     }
 
-    pub async fn update(&mut self) {
+    pub async fn update(&mut self, config: &Config) {
         tracing::trace!("updating Beszel information");
 
         let systems = self.client.systems().await;
@@ -85,7 +84,7 @@ impl BeszelHandler {
         if let Ok(systems) = systems {
             self.systems = Some(systems.clone());
 
-            let order = if let Some(order) = read_config().beszel.load_averages_order {
+            let order = if let Some(order) = config.beszel.load_averages_order.clone() {
                 order
             } else {
                 self.systems_to_order(systems)
@@ -205,11 +204,11 @@ impl HandleEvent for BeszelHandler {
         match event {
             BeszelEvent::Update => {
                 if let Some(bh) = &mut app.beszel_handler {
-                    bh.update().await;
+                    bh.update(&app.config).await;
                 }
             }
             BeszelEvent::Initialize => {
-                let beszel_handler = BeszelHandler::new().await;
+                let beszel_handler = BeszelHandler::new(&app.config).await;
                 if let Ok(beszel_handler) = beszel_handler {
                     app.beszel_handler = Some(beszel_handler);
                     app.event_handler
@@ -217,7 +216,7 @@ impl HandleEvent for BeszelHandler {
 
                     let sender = app.event_handler.sender.clone();
                     let poll_time = Duration::from_secs(
-                        config::read_config().beszel.poll_interval.unwrap_or(15) as u64,
+                        app.config.beszel.poll_interval.unwrap_or(15) as u64,
                     );
 
                     let task = async move {

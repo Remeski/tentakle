@@ -6,7 +6,7 @@ use serde::Deserialize;
 use tokio::{select, sync::mpsc::UnboundedSender};
 use tokio_tungstenite::connect_async;
 
-use crate::config::read_config;
+use crate::config::Config;
 use crate::event::{AppEvent, Event, HandleEvent, NtfyEvent};
 use crate::ui::Message;
 
@@ -30,8 +30,8 @@ pub struct NtfyMessage {
 }
 
 impl NtfyHandler {
-    pub fn new(sender: UnboundedSender<Event>) -> Self {
-        let url = Url::from_str(&read_config().ntfy.url).expect("unable to get url from string");
+    pub fn new(config: &Config, sender: UnboundedSender<Event>) -> Self {
+        let url = Url::from_str(&config.ntfy.url).expect("unable to get url from string");
         Self { sender, url }
     }
 
@@ -77,7 +77,7 @@ impl HandleEvent for NtfyHandler {
     ) -> color_eyre::eyre::Result<()> {
         match event {
             NtfyEvent::Initialize => {
-                let handler = NtfyHandler::new(app.event_handler.sender.clone());
+                let handler = NtfyHandler::new(&app.config, app.event_handler.sender.clone());
                 handler.init().await;
                 app.ntfy_handler = Some(handler);
             }

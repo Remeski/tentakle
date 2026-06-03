@@ -3,8 +3,6 @@ use std::panic;
 use color_eyre::eyre::Result;
 use crossterm::ExecutableCommand;
 
-use clap::Parser;
-
 use crate::app::App;
 
 mod app;
@@ -27,13 +25,13 @@ async fn main() -> Result<()> {
     }));
     color_eyre::install()?;
 
-    config::Args::parse();
-
     logs::initialize_logging()?;
+
+    let config = config::Config::new()?;
 
     std::io::stdout().execute(crossterm::event::EnableMouseCapture)?;
     let terminal = ratatui::init();
-    let app = App::new();
+    let app = App::new(config);
 
     let run = app.run(terminal).await;
 
