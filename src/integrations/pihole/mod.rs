@@ -92,11 +92,16 @@ impl PiholeHandler {
         Ok(None)
     }
 
-    pub async fn set_blocking(&self, state: bool, timer: usize) -> Result<()> {
+    pub async fn set_blocking(&self, state: bool, timer: Option<usize>) -> Result<()> {
         if let Some(sid) = &self.sid {
+            let body = if let Some(timer) = timer {
+                json!({"sid": sid.clone(), "blocking": state, "timer": timer})
+            } else {
+                json!({"sid": sid.clone(), "blocking": state})
+            };
             let client = reqwest::Client::new()
                 .post(self.base_url.join("dns/blocking").expect("bad urls"))
-                .json(&json!({"sid": sid.clone(), "blocking": state, "timer": timer}));
+                .json(&body);
             let resp: Value = client.send().await?.json().await?;
             tracing::info!(resp = ?resp);
         }
@@ -136,9 +141,8 @@ impl HandleEvent for PiholeHandler {
                 app.pihole_handler = Some(handler);
 
                 let sender = app.event_handler.sender.clone();
-                let poll_time = Duration::from_secs(
-                    app.config.pihole.poll_interval.unwrap_or(15) as u64,
-                );
+                let poll_time =
+                    Duration::from_secs(app.config.pihole.poll_interval.unwrap_or(15) as u64);
 
                 let task = async move {
                     let mut pihole_ticker = tokio::time::interval(poll_time);
@@ -165,13 +169,13 @@ impl HandleEvent for PiholeHandler {
             PiholeEvent::BlockingOn => {
                 if let Some(handler) = &mut app.pihole_handler {
                     tracing::trace!("Pihole blocking on");
-                    handler.set_blocking(true, 300).await?;
+                    handler.set_blocking(true, Some(60*10)).await?;
                 }
             }
             PiholeEvent::BlockingOff => {
                 if let Some(handler) = &mut app.pihole_handler {
                     tracing::trace!("Pihole blocking off");
-                    handler.set_blocking(false, 300).await?;
+                    handler.set_blocking(false, None).await?;
                 }
             }
             PiholeEvent::Logout => {
